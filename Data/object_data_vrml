@@ -2,13 +2,13 @@
 2
 
 #pattern 1
-VRML	Wrl/apple.dat
+AAA
 Data/hiro.patt 
 80.0
 0.0 0.0
 
 #pattern 2
-VRML	Wrl/snoman.dat
+BBB
 Data/kanji.patt 
 80.0
 0.0 0.0

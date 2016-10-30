@@ -96,7 +96,6 @@ static int          gARTImageSavePlease = FALSE;
 // Marker detection.
 static ARHandle		*gARHandle = NULL;
 static ARPattHandle	*gARPattHandle = NULL;
-static ARPattHandle	*gARPattHandle2 = NULL;
 static long			gCallCountMarkerDetect = 0;
 
 // Transformation matrix retrieval.
@@ -105,9 +104,10 @@ static ARdouble		gPatt_width     = 80.0;	// Per-marker, but we are using only 1 
 static ARdouble		gPatt_trans[3][4];		// Per-marker, but we are using only 1 marker.
 static ARdouble		gPatt_trans2[3][4];		// Per-marker, but we are using only 1 marker.
 static int			gPatt_found = FALSE;	// Per-marker, but we are using only 1 marker.
-static int			gPatt_id;				// Per-marker, but we are using only 1 marker.
-static int			gPatt_id2;				// Per-marker, but we are using only 1 marker.
-
+static int			gPatt_id = 1;				// Per-marker, but we are using only 1 marker.
+static int			gPatt_id2 = 2;				// Per-marker, but we are using only 1 marker.
+static	char patt_name[]  = "Data/hiro.patt";
+static	char patt_name2[]  = "Data/kanji.patt";
 // Drawing.
 static ARParamLT *gCparamLT = NULL;
 static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
@@ -118,7 +118,7 @@ static float gDrawRotateAngle = 10;			// For use in drawing.
 
 static float gboxsize = 1.0;			// for resizing collision box
 typedef enum {BOX, SPHERE} collision_type;
-collision_type collision_box = BOX;
+static collision_type collision_box = BOX;
 
 // ============================================================================
 //	Function prototypes.
@@ -269,15 +269,21 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 	return (TRUE);
 }
 
-static int setupMarker(const char *patt_name, int *patt_id, ARHandle *arhandle, ARPattHandle **pattHandle_p)
+static int setupMarker(ARHandle *arhandle, ARPattHandle **pattHandle_p)
 {	
-	if ((*pattHandle_p = arPattCreateHandle()) == NULL) {
+	if ((*pattHandle_p = arPattCreateHandle2(16,10)) == NULL) {
 		ARLOGe("setupMarker(): Error: arPattCreateHandle.\n");
 		return (FALSE);
 	}
 
 	// Loading only 1 pattern in this example.
-	if ((*patt_id = arPattLoad(*pattHandle_p, patt_name)) < 0) {
+	if ((gPatt_id = arPattLoad(*pattHandle_p, patt_name)) < 0) {
+		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
+		arPattDeleteHandle(*pattHandle_p);
+		return (FALSE);
+	}
+
+	if ((gPatt_id2 = arPattLoad(*pattHandle_p, patt_name2)) < 0) {
 		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
 		arPattDeleteHandle(*pattHandle_p);
 		return (FALSE);
@@ -334,6 +340,17 @@ static void Keyboard(unsigned char key, int x, int y)
 		break;
 		case 'a':
 		case 'A':
+		arGetLabelingThreshMode(gARHandle, &modea);
+		switch (modea) {
+			case AR_LABELING_THRESH_MODE_MANUAL:        modea = AR_LABELING_THRESH_MODE_AUTO_MEDIAN; break;
+			case AR_LABELING_THRESH_MODE_AUTO_MEDIAN:   modea = AR_LABELING_THRESH_MODE_AUTO_OTSU; break;
+			case AR_LABELING_THRESH_MODE_AUTO_OTSU:     modea = AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE; break;
+			case AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE: modea = AR_LABELING_THRESH_MODE_AUTO_BRACKETING; break;
+			case AR_LABELING_THRESH_MODE_AUTO_BRACKETING:
+			default: modea = AR_LABELING_THRESH_MODE_MANUAL; break;
+		}
+		case 'e':
+		case 'E':
 		switch (collision_box) {
 			case BOX:        collision_box = SPHERE; break;
 			case SPHERE:   collision_box = BOX; break;
@@ -422,12 +439,13 @@ static void mainLoop(void)
 		
 		gCallCountMarkerDetect++; // Increment ARToolKit FPS counter.
 		
+			gPatt_found = FALSE;
 		// Detect the markers in the video frame.
 		if (arDetectMarker(gARHandle, gARTImage) < 0) {
 			exit(-1);
 		}
-		
-		// Check through the marker_info array for highest confidence
+
+
 		// visible marker matching our preferred pattern.
 		int hiro = 0;
 		int kanji = 0;
@@ -447,8 +465,8 @@ static void mainLoop(void)
 		if (kanji == 1 && hiro == 1) { 
 			printf("kanjihiro \n");
 			// Get the transformation between the marker and the real camera into gPatt_trans.
-			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[k]), gPatt_width, gPatt_trans);
-			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[k]), gPatt_width, gPatt_trans2);
+			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
+			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
 			gPatt_found = TRUE;
 		} else {
 			printf("nothing \n");
@@ -536,7 +554,6 @@ static void Display(void)
 
 		// All lighting and geometry to be drawn relative to the marker goes here.
 		DrawCube();
-
 		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans2, m2, VIEW_SCALEFACTOR);
 #ifdef ARDOUBLE_IS_FLOAT
 		glLoadMatrixf(m2);
@@ -576,8 +593,7 @@ int main(int argc, char** argv)
 	char glutGamemode[32];
 	char cparam_name[] = "Data/camera_para.dat";
 	char vconf[] = "";
-	char patt_name[]  = "Data/hiro.patt";
-	char patt_name2[]  = "Data/kanji.patt";
+
 	
     //
 	// Library inits.
@@ -618,21 +634,18 @@ int main(int argc, char** argv)
 	}
 	arglSetupDebugMode(gArglSettings, gARHandle);
 	arUtilTimerReset();
-
-	// Load marker(s).
-	if (!setupMarker(patt_name, &gPatt_id, gARHandle, &gARPattHandle)) {
+	if (!setupMarker(gARHandle, &gARPattHandle)) {
 		ARLOGe("main(): Unable to set up AR marker.\n");
 		cleanup();
 		exit(-1);
 	}
+	printf("%d : %d\n",gPatt_id,gPatt_id2 );
 
-	if (!setupMarker(patt_name2, &gPatt_id2, gARHandle, &gARPattHandle2)) {
-		ARLOGe("main(): Unable to set up AR marker.\n");
-		cleanup();
-		exit(-1);
-	}
 
-	arSetLabelingThreshMode(gARHandle,AR_LABELING_THRESH_MODE_AUTO_MEDIAN);
+
+
+
+	arSetLabelingThreshMode(gARHandle,AR_LABELING_THRESH_MODE_AUTO_OTSU);
 	// Register GLUT event-handling callbacks.
 	// NB: mainLoop() is registered by Visibility.
 	glutDisplayFunc(Display);
