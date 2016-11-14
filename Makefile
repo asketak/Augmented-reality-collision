@@ -61,10 +61,10 @@ HEADERS =
 all: $(BIN_DIR)/simpleLite
 
 $(BIN_DIR)/simpleLite: simpleLite.o $(OBJS)
-	gcc -o $(BIN_DIR)/simpleLite simpleLite.o $(OBJS) $(LDFLAG) $(LIBS)
+	g++ -o $(BIN_DIR)/simpleLite simpleLite.o $(OBJS) $(LDFLAG) $(LIBS)
 
 simpleLite.o: simpleLite.c $(HEADERS)
-	gcc -c $(CFLAG) simpleLite.c 
+	g++ -c $(CFLAG) simpleLite.c 
 
 clean:
 	rm -f *.o
