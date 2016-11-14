@@ -25,14 +25,37 @@
     } );
   </script>
   <script>
-   $('#Check1').radiobutton();
    window.setInterval(function(){
-    console.log("haha");
+
+ 
+  var x = 0;
+  var y = 0;
+
+
+  if ($("#radio11").is(":checked")) {
+    x = 1;
+  }
+  if ($("#radio12").is(":checked")) {
+    x = 2;
+  }
+  if ($("#radio21").is(":checked")) {
+    y = 1;
+  }
+  if ($("#radio22").is(":checked")) {
+    y = 2;
+  }
+
+  var z =$( "#slider" ).slider( "value" ) ;
+
+  console.log(x);
+  console.log(y);
+  console.log(z);
+
     jQuery.ajax({
       type: "POST",
-      url: 'http://sima.ninja/php_.php',
+      url: 'http://sima.ninja/post_to_sql.php',
       dataType: 'json',
-      data: {functionname: 'add', arguments: [1, 2]},
+      data: {size: z, object: y, box: x},
 
       success: function (obj, textstatus) {
         if( !('error' in obj) ) {
@@ -43,7 +66,7 @@
         }
       }
     });
-  }, 5000);
+  }, 500);
 </script>
 </head>
 <body>
@@ -59,23 +82,23 @@
 
   <div class="radiobutton">
     <label for="Check1">cube<img src="cube.jpg" alt="cube" height="82" width="82"></label>
-    <input type="radio" name="name" id="Check1" value="1" checked="checked" />
+    <input type="radio" name="name" id="radio11" value="1" checked="checked" />
   </div> 
   <div class="radiobutton">
     <label for="Check1">sphere<img src="sphere.png" alt="sphere" height="82" width="82"></label>
-    <input type="radio" name="name" id="Check1" value="1" />
+    <input type="radio" name="name" id="radio12" value="1" />
   </div> 
 
   <br> <br> Object shape:
 
   <div class="radiobutton2">
     <label for="Check2">cube<img src="cube.jpg" alt="cube" height="82" width="82"></label>
-    <input type="radio" name="name2" id="Check2" value="1" checked="checked" />
+    <input type="radio" name="name2" id="radio21" value="1" checked="checked" />
   </div> 
 
   <div class="radiobutton2">
     <label for="Check2">sphere<img src="sphere.png" alt="sphere" height="82" width="82"></label>
-    <input type="radio" name="name2" id="Check2" value="1" />
+    <input type="radio" name="name2" id="radio22" value="1" />
   </div> 
 
 </body>
