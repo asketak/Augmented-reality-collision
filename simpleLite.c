@@ -54,6 +54,7 @@
 //	Includes
 // ============================================================================
 
+
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
@@ -89,7 +90,7 @@ static int windowHeight = 480;                  // Initial window height, also u
 static int windowDepth = 32;					// Fullscreen mode bit depth.
 static int windowRefresh = 0;					// Fullscreen mode refresh rate. Set to 0 to use default rate.
 
-// Image acquisition.
+// Image acquisitionk
 static ARUint8		*gARTImage = NULL;
 static int          gARTImageSavePlease = FALSE;
 
@@ -748,8 +749,8 @@ static void printMode()
     // Image size and processing mode.
 	arVideoGetSize(&xsize, &ysize);
 	arGetImageProcMode(gARHandle, &mode);
-	if (mode == AR_IMAGE_PROC_FRAME_IMAGE) text_p = "full frame";
-	else text_p = "even field only";
+	if (mode == AR_IMAGE_PROC_FRAME_IMAGE) text_p = (char *) "full frame";
+	else text_p = (char *)"even field only";
 	snprintf(text, sizeof(text), "Processing %dx%d video frames %s", xsize, ysize, text_p);
 	print(text, 2.0f,  (line - 1)*12.0f + 2.0f, 0, 1);
 	line++;
@@ -757,12 +758,12 @@ static void printMode()
     // Threshold mode, and threshold, if applicable.
 	arGetLabelingThreshMode(gARHandle, &threshMode);
 	switch (threshMode) {
-		case AR_LABELING_THRESH_MODE_MANUAL: text_p = "MANUAL"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_MEDIAN: text_p = "AUTO_MEDIAN"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_OTSU: text_p = "AUTO_OTSU"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE: text_p = "AUTO_ADAPTIVE"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_BRACKETING: text_p = "AUTO_BRACKETING"; break;
-		default: text_p = "UNKNOWN"; break;
+		case AR_LABELING_THRESH_MODE_MANUAL: text_p = (char *)"MANUAL"; break;
+		case AR_LABELING_THRESH_MODE_AUTO_MEDIAN: text_p = (char *)"AUTO_MEDIAN"; break;
+		case AR_LABELING_THRESH_MODE_AUTO_OTSU: text_p = (char *)"AUTO_OTSU"; break;
+		case AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE: text_p = (char *)"AUTO_ADAPTIVE"; break;
+		case AR_LABELING_THRESH_MODE_AUTO_BRACKETING: text_p = (char *)"AUTO_BRACKETING"; break;
+		default: text_p = (char *)"UNKNOWN"; break;
 	}
 	snprintf(text, sizeof(text), "Threshold mode: %s", text_p);
 	if (threshMode != AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE) {
@@ -778,12 +779,12 @@ static void printMode()
 	snprintf(text, sizeof(text), "Border: %0.1f%%", tempF*100.0);
 	arGetPatternDetectionMode(gARHandle, &mode);
 	switch (mode) {
-		case AR_TEMPLATE_MATCHING_COLOR: text_p = "Colour template (pattern)"; break;
-		case AR_TEMPLATE_MATCHING_MONO: text_p = "Mono template (pattern)"; break;
-		case AR_MATRIX_CODE_DETECTION: text_p = "Matrix (barcode)"; break;
-		case AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX: text_p = "Colour template + Matrix (2 pass, pattern + barcode)"; break;
-		case AR_TEMPLATE_MATCHING_MONO_AND_MATRIX: text_p = "Mono template + Matrix (2 pass, pattern + barcode "; break;
-		default: text_p = "UNKNOWN"; break;
+		case AR_TEMPLATE_MATCHING_COLOR: text_p = (char *)"Colour template (pattern)"; break;
+		case AR_TEMPLATE_MATCHING_MONO: text_p = (char *)"Mono template (pattern)"; break;
+		case AR_MATRIX_CODE_DETECTION: text_p = (char *)"Matrix (barcode)"; break;
+		case AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX: text_p = (char *)"Colour template + Matrix (2 pass, pattern + barcode)"; break;
+		case AR_TEMPLATE_MATCHING_MONO_AND_MATRIX: text_p = (char *)"Mono template + Matrix (2 pass, pattern + barcode "; break;
+		default: text_p = (char *)"UNKNOWN"; break;
 	}
 	len = (int)strlen(text);
 	snprintf(text + len, sizeof(text) - len, ", Pattern detection mode: %s", text_p);
