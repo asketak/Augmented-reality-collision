@@ -1,51 +1,6 @@
 /*
  *  simpleLite.c
  *
- *  Some code to demonstrate use of ARToolKit.
- *
- *  Press '?' while running for help on available key commands.
- *
- *  Disclaimer: IMPORTANT:  This Daqri software is supplied to you by Daqri
- *  LLC ("Daqri") in consideration of your agreement to the following
- *  terms, and your use, installation, modification or redistribution of
- *  this Daqri software constitutes acceptance of these terms.  If you do
- *  not agree with these terms, please do not use, install, modify or
- *  redistribute this Daqri software.
- *
- *  In consideration of your agreement to abide by the following terms, and
- *  subject to these terms, Daqri grants you a personal, non-exclusive
- *  license, under Daqri's copyrights in this original Daqri software (the
- *  "Daqri Software"), to use, reproduce, modify and redistribute the Daqri
- *  Software, with or without modifications, in source and/or binary forms;
- *  provided that if you redistribute the Daqri Software in its entirety and
- *  without modifications, you must retain this notice and the following
- *  text and disclaimers in all such redistributions of the Daqri Software.
- *  Neither the name, trademarks, service marks or logos of Daqri LLC may
- *  be used to endorse or promote products derived from the Daqri Software
- *  without specific prior written permission from Daqri.  Except as
- *  expressly stated in this notice, no other rights or licenses, express or
- *  implied, are granted by Daqri herein, including but not limited to any
- *  patent rights that may be infringed by your derivative works or by other
- *  works in which the Daqri Software may be incorporated.
- *
- *  The Daqri Software is provided by Daqri on an "AS IS" basis.  DAQRI
- *  MAKES NO WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION
- *  THE IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE, REGARDING THE DAQRI SOFTWARE OR ITS USE AND
- *  OPERATION ALONE OR IN COMBINATION WITH YOUR PRODUCTS.
- *
- *  IN NO EVENT SHALL DAQRI BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL
- *  OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION,
- *  MODIFICATION AND/OR DISTRIBUTION OF THE DAQRI SOFTWARE, HOWEVER CAUSED
- *  AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
- *  STRICT LIABILITY OR OTHERWISE, EVEN IF DAQRI HAS BEEN ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Copyright 2015 Daqri LLC. All Rights Reserved.
- *  Copyright 2002-2015 ARToolworks, Inc. All Rights Reserved.
- *
  *  Author(s): Philip Lamb.
  *
  */
@@ -55,6 +10,7 @@
 // ============================================================================
 
 
+#include <vector>
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
@@ -71,6 +27,17 @@
 #include <AR/param.h>			// arParamDisp()
 #include <AR/ar.h>
 #include <AR/gsub_lite.h>
+#include <stdio.h>
+#include <curl/curl.h>
+
+#include <iostream>
+#include <string>
+
+#include <string>
+#include <sstream>
+  #include <iostream>   // std::cout
+#include <string>     // std::string, std::stof``
+
 // ============================================================================
 //	Constants
 // ============================================================================
@@ -85,8 +52,8 @@
 
 // Preferences.
 static int windowed = TRUE;                     // Use windowed (TRUE) or fullscreen mode (FALSE) on launch.
-static int windowWidth = 640;					// Initial window width, also updated during program execution.
-static int windowHeight = 480;                  // Initial window height, also updated during program execution.
+static int windowWidth = 1280;					// Initial window width, also updated during program execution.
+static int windowHeight = 960;                  // Initial window height, also updated during program execution.
 static int windowDepth = 32;					// Fullscreen mode bit depth.
 static int windowRefresh = 0;					// Fullscreen mode refresh rate. Set to 0 to use default rate.
 
@@ -107,8 +74,12 @@ static ARdouble		gPatt_trans2[3][4];		// Per-marker, but we are using only 1 mar
 static int			gPatt_found = FALSE;	// Per-marker, but we are using only 1 marker.
 static int			gPatt_id = 1;				// Per-marker, but we are using only 1 marker.
 static int			gPatt_id2 = 2;				// Per-marker, but we are using only 1 marker.
+
+// paths to sources
 static	char patt_name[]  = "Data/hiro.patt";
 static	char patt_name2[]  = "Data/kanji.patt";
+static char url[] = "https://augment-reality.herokuapp.com/data.txt";
+
 // Drawing.
 static ARParamLT *gCparamLT = NULL;
 static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
@@ -133,6 +104,32 @@ static void printMode();
 //	Functions
 // ============================================================================
 
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+	((std::string*)userp)->append((char*)contents, size * nmemb);
+	return size * nmemb;
+}
+
+std::string curl(char * url) {
+
+
+	CURL *curl;
+	FILE *fp;
+	CURLcode res;
+	std::string readBuffer;
+
+	curl = curl_easy_init();
+	if(curl) {
+		curl_easy_setopt(curl, CURLOPT_URL,url);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+		res = curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
+
+	}
+	return readBuffer;
+
+}
 
 // Something to look at, draw a rotating colour cube.
 static void DrawCube(void)
@@ -405,6 +402,22 @@ static void Keyboard(unsigned char key, int x, int y)
 	
 }
 
+void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+	std::stringstream ss;
+	ss.str(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+}
+
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, elems);
+	return elems;
+}
+
 static void mainLoop(void)
 {
 	static int imageNumber = 0;
@@ -440,7 +453,7 @@ static void mainLoop(void)
 		
 		gCallCountMarkerDetect++; // Increment ARToolKit FPS counter.
 		
-			gPatt_found = FALSE;
+		gPatt_found = FALSE;
 		// Detect the markers in the video frame.
 		if (arDetectMarker(gARHandle, gARTImage) < 0) {
 			exit(-1);
@@ -451,33 +464,51 @@ static void mainLoop(void)
 		int hiro = 0;
 		int kanji = 0;
 		k = -1;
-		printf("marker_num: %d \n",gARHandle->marker_num);
+		// printf("marker_num: %d \n",gARHandle->marker_num);
 		for (j = 0; j < gARHandle->marker_num; j++) {
 			if (gARHandle->markerInfo[j].id == gPatt_id) {
 				hiro = 1;
-				printf("hiro \n");
+				// printf("hiro \n");
 			}
 			if (gARHandle->markerInfo[j].id == gPatt_id2) {
 				kanji = 1;
-				printf("kanj\n");
+				// printf("kanj\n")
 			}
 		}
 		
-		if (kanji == 1 && hiro == 1) { 
-			printf("kanjihiro \n");
+		if (kanji == 1 || hiro == 1) {  // I show objects only when both are visible
+			std::string params = curl(url);
+			std::vector<std::string> prms = split(params,':');
+			// printf("%s\n", prms[0].c_str());
+			// printf("%s\n", prms[1].c_str());
+			// printf("%s\n", prms[2].c_str());
+			 switch (prms[0][0]) {
+				 case '2':        collision_box = SPHERE; break;
+				 case '1':   collision_box = BOX; break;
+		 }
+			 // switch (prms[1][0]) {
+				 // case '2':        object_type = SPHERE; break;
+				 // case '1':   object_type = BOX; break;
+		 // }
+		  std::string::size_type sz;  
+		 float sizee = strtof(prms[2].c_str(),NULL);
+		gboxsize = (float)sizee/(float)30 ;
+		printf("%f\n", gboxsize);
+			// printf("kanjihiro \n");
 			// Get the transformation between the marker and the real camera into gPatt_trans.
 			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
 			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
 			gPatt_found = TRUE;
-		} else {
-			printf("nothing \n");
-			gPatt_found = FALSE;
-		}
-		
-		// Tell GLUT the display has changed.
-		glutPostRedisplay();
+		} 
+	} else {
+			// printf("nothing \n");
+		gPatt_found = FALSE;
 	}
+
+		// Tell GLUT the display has changed.
+	glutPostRedisplay();
 }
+
 
 //
 //	This function is called on events when the visibility of the
@@ -640,7 +671,7 @@ int main(int argc, char** argv)
 		cleanup();
 		exit(-1);
 	}
-	printf("%d : %d\n",gPatt_id,gPatt_id2 );
+	// printf("%d : %d\n",gPatt_id,gPatt_id2 );
 
 
 

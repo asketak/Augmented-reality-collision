@@ -1,23 +1,34 @@
 #include <stdio.h>
 #include <curl/curl.h>
 
+#include <iostream>
+#include <string>
+#include <curl/curl.h>
+
+
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
 int main(void)
 {
     CURL *curl;
     FILE *fp;
     CURLcode res;
-    char *url = "http://www.glue.umd.edu/afs/glue.umd.edu/system/info/olh/Text/Text_Editors/";
-    char outfilename[FILENAME_MAX] = "vi.txt";
-    curl = curl_easy_init();                                                                                                                                                                                                                                                           
-    if (curl)
-    {   
-        fp = fopen(outfilename,"wb");
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        fclose(fp);
-    }   
-    return 0;
+    char *url = "sima.ninja/data.txt";
+  std::string readBuffer;
+
+  curl = curl_easy_init();
+  if(curl) {
+    curl_easy_setopt(curl, CURLOPT_URL,url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    std::cout << readBuffer << std::endl;
+  }
+  return 0;
 }
