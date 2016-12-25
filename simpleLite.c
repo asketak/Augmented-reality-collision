@@ -89,8 +89,10 @@ static int gDrawRotate = TRUE;
 static float gDrawRotateAngle = 10;			// For use in drawing.
 
 static float gboxsize = 1.0;			// for resizing collision box
-typedef enum {BOX, SPHERE} collision_type;
-static collision_type collision_box = BOX;
+typedef enum {cBOX, cSPHERE} collision_type;
+typedef enum {BOX, SPHERE} object_type;
+static collision_type collision_box = cBOX;
+static object_type object_model = BOX;
 
 // ============================================================================
 //	Function prototypes.
@@ -110,7 +112,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
 	return size * nmemb;
 }
 
-std::string curl(char * url) {
+static std::string curl(char * url) {
 
 
 	CURL *curl;
@@ -174,11 +176,11 @@ static void DrawCube(void)
     }
     glVertexPointer(3, GL_FLOAT, 0, cube_vertices_big);
     glScalef(gboxsize, gboxsize, gboxsize);
-    if (collision_box == SPHERE)
+    if (collision_box == cSPHERE)
     {
     	glutWireSphere(1, 20, 20);
     }
-    if (collision_box == BOX)
+    if (collision_box == cBOX)
     {
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
@@ -350,8 +352,8 @@ static void Keyboard(unsigned char key, int x, int y)
 		case 'e':
 		case 'E':
 		switch (collision_box) {
-			case BOX:        collision_box = SPHERE; break;
-			case SPHERE:   collision_box = BOX; break;
+			case cBOX:        collision_box = cSPHERE; break;
+			case cSPHERE:   collision_box = cBOX; break;
 		}
 		arSetLabelingThreshMode(gARHandle, modea);
 		break;
@@ -422,8 +424,9 @@ static void mainLoop(void)
 {
 	static int imageNumber = 0;
 	static int ms_prev;
-	int ms;
-	float s_elapsed;
+	static int ms_prevcurl;
+	int ms,mscurl;
+	float s_elapsed,s_elapsedcurl;
 	ARUint8 *image;
 	ARdouble err;
 
@@ -431,6 +434,7 @@ static void mainLoop(void)
 	
 	// Find out how long since mainLoop() last ran.
 	ms = glutGet(GLUT_ELAPSED_TIME);
+	mscurl = ms;
 	s_elapsed = (float)(ms - ms_prev) * 0.001f;
 	if (s_elapsed < 0.01f) return; // Don't update more often than 100 Hz.
 	ms_prev = ms;
@@ -476,25 +480,25 @@ static void mainLoop(void)
 			}
 		}
 		
-		if (kanji == 1 || hiro == 1) {  // I show objects only when both are visible
-			std::string params = curl(url);
-			std::vector<std::string> prms = split(params,':');
-			// printf("%s\n", prms[0].c_str());
-			// printf("%s\n", prms[1].c_str());
-			// printf("%s\n", prms[2].c_str());
-			 switch (prms[0][0]) {
-				 case '2':        collision_box = SPHERE; break;
-				 case '1':   collision_box = BOX; break;
-		 }
-			 // switch (prms[1][0]) {
-				 // case '2':        object_type = SPHERE; break;
-				 // case '1':   object_type = BOX; break;
-		 // }
-		  std::string::size_type sz;  
-		 float sizee = strtof(prms[2].c_str(),NULL);
-		gboxsize = (float)sizee/(float)30 ;
-		printf("%f\n", gboxsize);
-			// printf("kanjihiro \n");
+		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
+			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
+			if (s_elapsedcurl > 0.1f) {
+				ms_prevcurl = mscurl;
+
+				std::string params = curl(url);
+				std::vector<std::string> prms = split(params,':');
+				switch (prms[0][0]) {
+					case '2':        collision_box = cSPHERE; break;
+					case '1':   collision_box = cBOX; break;
+				}
+				switch (prms[1][0]) {
+					case '2':        object_model = SPHERE; break;
+					case '1':   object_model = BOX; break;
+				}
+				std::string::size_type sz;  
+				float sizee = strtof(prms[2].c_str(),NULL);
+				gboxsize = (float)sizee/(float)30 ;
+			}
 			// Get the transformation between the marker and the real camera into gPatt_trans.
 			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
 			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
