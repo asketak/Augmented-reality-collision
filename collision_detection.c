@@ -21,13 +21,13 @@
 #include <AR/param.h>
 #include <AR/ar.h>
 #include <AR/gsub_lite.h>
-#include <curl/curl.h>
 #include <iostream>
 #include <sstream>
-#include <iostream>   // std::cout
-#include <string>     // std::string, std::stof``
-
+#include <cmath>
+#include <iostream>
+#include <string>
 #include "collision_detection.h"
+#include "curl.h"
 
 // ============================================================================
 //	Constants
@@ -90,32 +90,6 @@ static object_type object_model = BOX;
 //	Functions
 // ============================================================================
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-	((std::string*)userp)->append((char*)contents, size * nmemb);
-	return size * nmemb;
-}
-
-static std::string curl(char * url) {
-
-
-	CURL *curl;
-	FILE *fp;
-	CURLcode res;
-	std::string readBuffer;
-
-	curl = curl_easy_init();
-	if(curl) {
-		curl_easy_setopt(curl, CURLOPT_URL,url);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-		res = curl_easy_perform(curl);
-		curl_easy_cleanup(curl);
-
-	}
-	return readBuffer;
-
-}
 
 // Something to look at, draw a rotating colour cube.
 static void DrawCube(void)
@@ -141,24 +115,28 @@ static void DrawCube(void)
     glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
     glScalef(fSize, fSize, fSize);
     glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+//    glDisable(GL_LIGHTING);
+ //   glDisable(GL_TEXTURE_2D);
+  //  glDisable(GL_BLEND);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
     glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
-
-    for (i = 0; i < 6; i++) {
-    	glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
+    if (object_model == SPHERE){
+		gluSphere(gluNewQuadric(), 1,10,10);
+	} else{
+    	for (i = 0; i < 6; i++) {
+    		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
+    	}
+    	glDisableClientState(GL_COLOR_ARRAY);
+    	glColor4ub(0, 0, 0, 255);
+    	for (i = 0; i < 6; i++) {
+    		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
+    	}
+    	glVertexPointer(3, GL_FLOAT, 0, cube_vertices_big);
+		glRotatef(gDrawRotateAngle, 0.0f, 0.0f, -1.0f); // Rotate about z axis.
     }
-    glDisableClientState(GL_COLOR_ARRAY);
-    glColor4ub(0, 0, 0, 255);
-    for (i = 0; i < 6; i++) {
-    	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glVertexPointer(3, GL_FLOAT, 0, cube_vertices_big);
     glScalef(gboxsize, gboxsize, gboxsize);
     if (collision_box == cSPHERE)
     {
@@ -397,7 +375,6 @@ void split(const std::string &s, char delim, std::vector<std::string> &elems) {
 	}
 }
 
-
 std::vector<std::string> split(const std::string &s, char delim) {
 	std::vector<std::string> elems;
 	split(s, delim, elems);
@@ -413,14 +390,13 @@ static void mainLoop(void)
 	float s_elapsed,s_elapsedcurl;
 	ARUint8 *image;
 	ARdouble err;
-
-	int             j,k;
+	int j,k;
 
 	// Find out how long since mainLoop() last ran.
 	ms = glutGet(GLUT_ELAPSED_TIME);
 	mscurl = ms;
 	s_elapsed = (float)(ms - ms_prev) * 0.001f;
-	if (s_elapsed < 0.01f) return; // Don't update more often than 100 Hz.
+	if (s_elapsed < 0.05f) return; // Don't update more often than 100 Hz.
 	ms_prev = ms;
 
 	// Update drawing.
@@ -466,42 +442,37 @@ static void mainLoop(void)
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
-			if (s_elapsedcurl > 0.1f) {
+			if (s_elapsedcurl > 1.5f) {
 				ms_prevcurl = mscurl;
 
 				std::string params = curl(url);
+                std::cout << params << std::endl;
 				std::vector<std::string> prms = split(params,':');
-				switch (prms[0][0]) {
-					case '2':        collision_box = cSPHERE; break;
-					case '1':   collision_box = cBOX; break;
-				}
-				switch (prms[1][0]) {
-					case '2':        object_model = SPHERE; break;
-					case '1':   object_model = BOX; break;
-				}
-				std::string::size_type sz;
-				float sizee = strtof(prms[2].c_str(),NULL);
-				gboxsize = (float)sizee/(float)30 ;
-			}
-			// Get the transformation between the marker and the real camera into gPatt_trans.
-			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
-			err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
-			gPatt_found = TRUE;
+                    switch (prms[0][0]) {
+                        case '2':   collision_box = cSPHERE; break;
+                        case '1':   collision_box = cBOX; break;
+                    }
+                    switch (prms[1][0]) {
+                        case '2':   object_model = SPHERE; break;
+                        case '1':   object_model = BOX; break;
+                    }
+                    float sizee = strtof(prms[2].c_str(),NULL);
+                    gboxsize = (float)sizee/(float)30 ;
+                }
+                // Get the transformation between the marker and the real camera into gPatt_trans.
+                err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
+                err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
+                gPatt_found = TRUE;
 		}
 	} else {
 			// printf("nothing \n");
 		gPatt_found = FALSE;
 	}
 
-		// Tell GLUT the display has changed.
 	glutPostRedisplay();
 }
 
 
-//
-//	This function is called on events when the visibility of the
-//	GLUT window changes (including when it first becomes visible).
-//
 static void Visibility(int visible)
 {
 	if (visible == GLUT_VISIBLE) {
@@ -511,10 +482,6 @@ static void Visibility(int visible)
 	}
 }
 
-//
-//	This function is called when the
-//	GLUT window is resized.
-//
 static void Reshape(int w, int h)
 {
 	windowWidth = w;
@@ -522,13 +489,8 @@ static void Reshape(int w, int h)
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
-
-	// Call through to anyone else who needs to know about window sizing here.
 }
 
-//
-// This function is called when the window needs redrawing.
-//
 static void Display(void)
 {
 	ARdouble p[16];
@@ -562,6 +524,16 @@ static void Display(void)
 	//none
 
 	if (gPatt_found) {
+
+//		double x1 = gPatt_trans[0][3];
+//		double x2 = gPatt_trans2[0][3];
+//		double y1 = gPatt_trans[1][3];
+//		double y2 = gPatt_trans2[1][3];
+//		double z1 = gPatt_trans[2][3];
+//		double z2 = gPatt_trans2[2][3];
+
+ //       double  dist = pow(pow(x1-x2,2) + pow(y1-y2,2) + pow(z1-z2,2), 0.5);
+
 
 		// Calculate the camera position relative to the marker.
 		// Replace VIEW_SCALEFACTOR with 1.0 to make one drawing unit equal to 1.0 ARToolKit units (usually millimeters).
@@ -620,7 +592,6 @@ int main(int argc, char** argv)
 		exit(-1);
 	}
 
-	// Set up GL context(s) for OpenGL to draw into.
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	if (!windowed) {
 		if (windowRefresh) sprintf(glutGamemode, "%ix%i:%i@%i", windowWidth, windowHeight, windowDepth, windowRefresh);
@@ -632,7 +603,6 @@ int main(int argc, char** argv)
 		glutCreateWindow(argv[0]);
 	}
 
-	// Setup ARgsub_lite library for current OpenGL context.
 	if ((gArglSettings = arglSetupForCurrentContext(&(gCparamLT->param), arVideoGetPixelFormat())) == NULL) {
 		ARLOGe("main(): arglSetupForCurrentContext() returned error.\n");
 		cleanup();
@@ -656,10 +626,6 @@ int main(int argc, char** argv)
 
 	return (0);
 }
-
-//
-// The following functions provide the onscreen help text and mode info.
-//
 
 static void print(const char *text, const float x, const float y, int calculateXFromRightEdge, int calculateYFromTopEdge)
 {
