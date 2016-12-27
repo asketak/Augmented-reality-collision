@@ -10,6 +10,7 @@
 // ============================================================================
 
 #include <vector>
+#include <future>
 #include <stdio.h>
 #ifdef _WIN32
 #  define snprintf _snprintf
@@ -28,6 +29,7 @@
 #include <string>
 #include "collision_detection.h"
 #include "curl.h"
+
 
 // ============================================================================
 //	Constants
@@ -70,6 +72,7 @@ static int			gPatt_id2 = 2;				// Per-marker, but we are using only 1 marker.
 static	char patt_name[]  = "Data/hiro.patt";
 static	char patt_name2[]  = "Data/kanji.patt";
 static char url[] = "https://augment-reality.herokuapp.com/data.txt";
+std::future<std::string> params = std::async(curl,url);
 
 // Drawing.
 static ARParamLT *gCparamLT = NULL;
@@ -386,8 +389,8 @@ static void mainLoop(void)
 	static int imageNumber = 0;
 	static int ms_prev;
 	static int ms_prevcurl;
-	int ms,mscurl;
-	float s_elapsed,s_elapsedcurl;
+	static int ms,mscurl;
+	static float s_elapsed,s_elapsedcurl;
 	ARUint8 *image;
 	ARdouble err;
 	int j,k;
@@ -442,12 +445,17 @@ static void mainLoop(void)
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
-			if (s_elapsedcurl > 1.5f) {
+//			std::cout << ms_prevcurl << ":" << mscurl << ":" << s_elapsedcurl << std::endl;
+			if (s_elapsedcurl > 1) {
 				ms_prevcurl = mscurl;
+//				std::cout << ms_prevcurl << ":" << mscurl << ":" << s_elapsedcurl << std::endl;
 
-				std::string params = curl(url);
-                std::cout << params << std::endl;
-				std::vector<std::string> prms = split(params,':');
+//				std::string params = curl(url);
+				std::string fut = params.get();
+				params = std::async(std::launch::async,curl,url);
+
+
+				std::vector<std::string> prms = split(fut,':');
                     switch (prms[0][0]) {
                         case '2':   collision_box = cSPHERE; break;
                         case '1':   collision_box = cBOX; break;

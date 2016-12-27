@@ -14,8 +14,7 @@ std::string curl(char * url) {
     FILE *fp;
     CURLcode res;
     std::string readBuffer;
-    std::string ret = "2:2:60";
-    //return  ret;
+    std::string ret = "1:1:50";
 
     curl = curl_easy_init();
     if(curl) {
