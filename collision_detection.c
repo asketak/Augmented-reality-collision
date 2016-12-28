@@ -159,13 +159,28 @@ static void DrawCube(void)
     glEnableClientState(GL_COLOR_ARRAY);
 
     if (object_model == SPHERE){
+
 		GLuint _textureId; //The id of the textur
 		GLUquadric *quad;
 		Image* image = loadBMP("earth.bmp");
+		glEnable(GL_TEXTURE_2D);
+
+		glBindTexture(GL_TEXTURE_2D, _textureId);
 		_textureId = loadTexture(image);
-        glutSolidSphere(1.0, 24, 24);
-		//
-//		gluSphere(gluNewQuadric(), 1,10,10);
+		quad = gluNewQuadric();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+//		glRotatef(90,1.0f,0.0f,0.0f);
+
+//		glRotatef(rotate,0.0f,0.0f,1.0f);
+
+		gluQuadricTexture(quad,1);
+//        glutSolidSphere(1.0, 24, 24);
+		gluSphere(quad, 1,10,10);
+
 	} else{
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
