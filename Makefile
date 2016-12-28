@@ -15,10 +15,10 @@ HEADERS =
 all: $(BIN_DIR)/collision_detection
 
 $(BIN_DIR)/collision_detection: collision_detection.o $(OBJS)
-	g++ -o $(BIN_DIR)/collision_detection collision_detection.o curl.o $(OBJS) $(LDFLAG) $(LIBS)
+	g++ -o $(BIN_DIR)/collision_detection collision_detection.o curl.o imageloader.o $(OBJS) $(LDFLAG) $(LIBS)
 
 collision_detection.o: collision_detection.c $(HEADERS)
-	g++ -c $(CFLAG) collision_detection.c curl.c
+	g++ -c $(CFLAG) collision_detection.c curl.c imageloader.cpp
 
 clean:
 	rm -f *.o

@@ -29,6 +29,7 @@
 #include <string>
 #include "collision_detection.h"
 #include "curl.h"
+#include "imageloader.h"
 
 
 // ============================================================================
@@ -93,6 +94,37 @@ static object_type object_model = BOX;
 //	Functions
 // ============================================================================
 
+GLuint loadTexture(Image* image) {
+
+	GLuint textureId;
+
+	glGenTextures(1, &textureId); //Make room for our texture
+
+	glBindTexture(GL_TEXTURE_2D, textureId); //Tell OpenGL which texture to edit
+
+	//Map the image to the texture
+
+	glTexImage2D(GL_TEXTURE_2D,                //Always GL_TEXTURE_2D
+
+				 0,                            //0 for now
+
+				 GL_RGB,                       //Format OpenGL uses for image
+
+				 image->width, image->height,  //Width and height
+
+				 0,                            //The border of the image
+
+				 GL_RGB, //GL_RGB, because pixels are stored in RGB format
+
+				 GL_UNSIGNED_BYTE, //GL_UNSIGNED_BYTE, because pixels are stored
+
+			//as unsigned numbers
+
+				 image->pixels);               //The actual pixel data
+
+	return textureId; //Returns the id of the texture
+
+}
 
 // Something to look at, draw a rotating colour cube.
 static void DrawCube(void)
@@ -127,7 +159,13 @@ static void DrawCube(void)
     glEnableClientState(GL_COLOR_ARRAY);
 
     if (object_model == SPHERE){
-		gluSphere(gluNewQuadric(), 1,10,10);
+		GLuint _textureId; //The id of the textur
+		GLUquadric *quad;
+		Image* image = loadBMP("earth.bmp");
+		_textureId = loadTexture(image);
+        glutSolidSphere(1.0, 24, 24);
+		//
+//		gluSphere(gluNewQuadric(), 1,10,10);
 	} else{
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
@@ -445,12 +483,9 @@ static void mainLoop(void)
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
-//			std::cout << ms_prevcurl << ":" << mscurl << ":" << s_elapsedcurl << std::endl;
 			if (s_elapsedcurl > 1) {
 				ms_prevcurl = mscurl;
-//				std::cout << ms_prevcurl << ":" << mscurl << ":" << s_elapsedcurl << std::endl;
 
-//				std::string params = curl(url);
 				std::string fut = params.get();
 				params = std::async(std::launch::async,curl,url);
 
