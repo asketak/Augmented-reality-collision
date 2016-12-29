@@ -80,7 +80,7 @@ static ARParamLT *gCparamLT = NULL;
 static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
 static int gShowHelp = 1;
 static int gShowMode = 1;
-static int gDrawRotate = TRUE;
+static int gDrawRotate = FALSE;
 static float gDrawRotateAngle = 10;			// For use in drawing.
 
 // menu, changing properties of objects
@@ -89,6 +89,7 @@ typedef enum {cBOX, cSPHERE} collision_type;
 typedef enum {BOX, SPHERE} object_type;
 static collision_type collision_box = cBOX;
 static object_type object_model = BOX;
+double dist = 0;
 
 // ============================================================================
 //	Functions
@@ -146,17 +147,17 @@ static void DrawCube(void)
         /* +z */ {0.8f, 0.8f, 0.8f}, {0.8f, -0.8f, 0.8f}, {-0.8f, -0.8f, 0.8f}, {-0.8f, 0.8f, 0.8f},
         /* -z */ {0.8f, 0.8f, -0.8f}, {0.8f, -0.8f, -0.8f}, {-0.8f, -0.8f, -0.8f}, {-0.8f, 0.8f, -0.8f} };
 
+	const GLubyte black [4] = {255, 255, 255, 255};
     glPushMatrix(); // Save world coordinate system.
-    glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
     glScalef(fSize, fSize, fSize);
     glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
 //    glDisable(GL_LIGHTING);
- //   glDisable(GL_TEXTURE_2D);
-  //  glDisable(GL_BLEND);
+//    glDisable(GL_TEXTURE_2D);
+//    glDisable(GL_BLEND);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
     glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
+//    glEnableClientState(GL_COLOR_ARRAY);
 
     if (object_model == SPHERE){
 
@@ -168,41 +169,45 @@ static void DrawCube(void)
 		glBindTexture(GL_TEXTURE_2D, _textureId);
 		_textureId = loadTexture(image);
 		quad = gluNewQuadric();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//		glRotatef(90,1.0f,0.0f,0.0f);
-
-//		glRotatef(rotate,0.0f,0.0f,1.0f);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		gluQuadricTexture(quad,1);
-//        glutSolidSphere(1.0, 24, 24);
 		gluSphere(quad, 1,10,10);
 
 	} else{
+    glEnableClientState(GL_COLOR_ARRAY);
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
     	}
-    	glDisableClientState(GL_COLOR_ARRAY);
-    	glColor4ub(0, 0, 0, 255);
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
     	}
     	glVertexPointer(3, GL_FLOAT, 0, cube_vertices_big);
-		glRotatef(gDrawRotateAngle, 0.0f, 0.0f, -1.0f); // Rotate about z axis.
+		glDisableClientState(GL_COLOR_ARRAY);
     }
+
     glScalef(gboxsize, gboxsize, gboxsize);
     if (collision_box == cSPHERE)
     {
+        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
+		if(dist < gboxsize*30)
+		{
+			glColor4d(100,0,0,1);
+		}
     	glutWireSphere(1, 20, 20);
+		glColor4d(1,1,1,1);
     }
     if (collision_box == cBOX)
     {
+		if(dist < gboxsize*30*2)
+		{
+			glColor4d(100,0,0,1);
+		}
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
     	}
+		glColor4d(1,1,1,1);
     }
     glPopMatrix();    // Restore world coordinate system.
 }
@@ -498,7 +503,7 @@ static void mainLoop(void)
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
-			if (s_elapsedcurl > 1) {
+			if (s_elapsedcurl > 2) {
 				ms_prevcurl = mscurl;
 
 				std::string fut = params.get();
@@ -521,6 +526,15 @@ static void mainLoop(void)
                 err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
                 err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
                 gPatt_found = TRUE;
+
+				double x1 = gPatt_trans[0][3];
+				double x2 = gPatt_trans2[0][3];
+				double y1 = gPatt_trans[1][3];
+				double y2 = gPatt_trans2[1][3];
+				double z1 = gPatt_trans[2][3];
+				double z2 = gPatt_trans2[2][3];
+    		    dist = pow(pow(x1-x2,2) + pow(y1-y2,2) + pow(z1-z2,2), 0.5);
+//        		std::cout << "distance: " << dist << std::endl;
 		}
 	} else {
 			// printf("nothing \n");
@@ -582,15 +596,6 @@ static void Display(void)
 	//none
 
 	if (gPatt_found) {
-
-//		double x1 = gPatt_trans[0][3];
-//		double x2 = gPatt_trans2[0][3];
-//		double y1 = gPatt_trans[1][3];
-//		double y2 = gPatt_trans2[1][3];
-//		double z1 = gPatt_trans[2][3];
-//		double z2 = gPatt_trans2[2][3];
-
- //       double  dist = pow(pow(x1-x2,2) + pow(y1-y2,2) + pow(z1-z2,2), 0.5);
 
 
 		// Calculate the camera position relative to the marker.
