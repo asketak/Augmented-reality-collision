@@ -137,8 +137,8 @@ static void DrawCube(void)
 	int i;
 	float fSize = 40.0f;
 	const GLfloat cube_vertices [8][3] = {
-        /* +z */ {1, 1, 1}, {1, -1, 1}, {-1, -1, 1}, {-1, 1, 1},
-        /* -z */ {1, 1, -1}, {1, -1, -1}, {-1, -1, -1}, {-1, 1, -1} };
+        /* +z */ {0.866, 0.866, 0.866}, {0.866, -0.866, 0.866}, {-0.866, -0.866, 0.866}, {-0.866, 0.866, 0.866},
+        /* -z */ {0.866, 0.866, -0.866}, {0.866, -0.866, -0.866}, {-0.866, -0.866, -0.866}, {-0.866, 0.866, -0.866} };
 		const GLubyte cube_vertex_colors [8][4] = {
 			{255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
 			{255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
@@ -189,8 +189,8 @@ static void DrawCube(void)
     glScalef(gboxsize, gboxsize, gboxsize);
     if (collision_box == cSPHERE)
     {
-        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
-		if(dist/2 < gboxsize*40*0.95)
+//        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
+		if(dist/2 < gboxsize*40*1.00)
 		{
 			glColor4d(100,0,0,1);
 		}
@@ -199,7 +199,14 @@ static void DrawCube(void)
     }
     if (collision_box == cBOX)
     {
-		if(dist < gboxsize*30*2)
+        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
+        std::cout << "xdist: " << xdist;
+        std::cout << "ydist: " << ydist;
+        std::cout << "zdist: " << zdist;
+        std::cout << std::endl;
+        if(gboxsize*70 > xdist &&
+          gboxsize*70 > ydist &&
+          gboxsize*70 > zdist)
 		{
 			glColor4d(100,0,0,1);
 		}
@@ -535,7 +542,7 @@ static void mainLoop(void)
     		    dist = pow(pow(x1-x2,2) + pow(y1-y2,2) + pow(z1-z2,2), 0.5);
 				xdist= std::abs(x1 - x2);
                 ydist= std::abs(y1 - y2);
-            zdist= std::abs(z1 - z2);
+                zdist= std::abs(z1 - z2);
 //        		std::cout << "distance: " << dist << std::endl;
 		}
 	} else {
@@ -611,6 +618,7 @@ static void Display(void)
 		DrawCube();
 
 		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans2, m2, VIEW_SCALEFACTOR);
+        std::cout << m2[0] << std::endl;
 #ifdef ARDOUBLE_IS_FLOAT
 		glLoadMatrixf(m2);
 #else
