@@ -90,6 +90,9 @@ typedef enum {BOX, SPHERE} object_type;
 static collision_type collision_box = cBOX;
 static object_type object_model = BOX;
 double dist = 0;
+double xdist = 0;
+double ydist = 0;
+double zdist = 0;
 
 // ============================================================================
 //	Functions
@@ -134,18 +137,14 @@ static void DrawCube(void)
 	int i;
 	float fSize = 40.0f;
 	const GLfloat cube_vertices [8][3] = {
-        /* +z */ {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f},
-        /* -z */ {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} };
+        /* +z */ {1, 1, 1}, {1, -1, 1}, {-1, -1, 1}, {-1, 1, 1},
+        /* -z */ {1, 1, -1}, {1, -1, -1}, {-1, -1, -1}, {-1, 1, -1} };
 		const GLubyte cube_vertex_colors [8][4] = {
 			{255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
 			{255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
     const GLubyte cube_faces [6][4] = { /* ccw-winding */
         /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
         /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
-
-			const GLfloat cube_vertices_big [8][3] = {
-        /* +z */ {0.8f, 0.8f, 0.8f}, {0.8f, -0.8f, 0.8f}, {-0.8f, -0.8f, 0.8f}, {-0.8f, 0.8f, 0.8f},
-        /* -z */ {0.8f, 0.8f, -0.8f}, {0.8f, -0.8f, -0.8f}, {-0.8f, -0.8f, -0.8f}, {-0.8f, 0.8f, -0.8f} };
 
 	const GLubyte black [4] = {255, 255, 255, 255};
     glPushMatrix(); // Save world coordinate system.
@@ -183,7 +182,7 @@ static void DrawCube(void)
     	for (i = 0; i < 6; i++) {
     		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
     	}
-    	glVertexPointer(3, GL_FLOAT, 0, cube_vertices_big);
+    	glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
 		glDisableClientState(GL_COLOR_ARRAY);
     }
 
@@ -191,7 +190,7 @@ static void DrawCube(void)
     if (collision_box == cSPHERE)
     {
         std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
-		if(dist < gboxsize*30)
+		if(dist/2 < gboxsize*40*0.95)
 		{
 			glColor4d(100,0,0,1);
 		}
@@ -534,6 +533,9 @@ static void mainLoop(void)
 				double z1 = gPatt_trans[2][3];
 				double z2 = gPatt_trans2[2][3];
     		    dist = pow(pow(x1-x2,2) + pow(y1-y2,2) + pow(z1-z2,2), 0.5);
+				xdist= std::abs(x1 - x2);
+                ydist= std::abs(y1 - y2);
+            zdist= std::abs(z1 - z2);
 //        		std::cout << "distance: " << dist << std::endl;
 		}
 	} else {
