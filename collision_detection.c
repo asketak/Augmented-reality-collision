@@ -65,6 +65,7 @@ static AR3DHandle	*gAR3DHandle = NULL;
 static ARdouble		gPatt_width     = 80.0;	// Per-marker, but we are using only 1 marker.
 static ARdouble		gPatt_trans[3][4];		// Per-marker, but we are using only 1 marker.
 static ARdouble		gPatt_trans2[3][4];		// Per-marker, but we are using only 1 marker.
+static ARdouble		gPatt_trans_norot[3][4];		// Per-marker, but we are using only 1 marker.
 static int			gPatt_found = FALSE;	// Per-marker, but we are using only 1 marker.
 static int			gPatt_id = 1;				// Per-marker, but we are using only 1 marker.
 static int			gPatt_id2 = 2;				// Per-marker, but we are using only 1 marker.
@@ -94,6 +95,10 @@ double xdist = 0;
 double ydist = 0;
 double zdist = 0;
 
+ARdouble p[16];
+ARdouble m[16];
+ARdouble m_norot[16];
+ARdouble m2[16];
 // ============================================================================
 //	Functions
 // ============================================================================
@@ -186,6 +191,35 @@ static void DrawCube(void)
 		glDisableClientState(GL_COLOR_ARRAY);
     }
 
+    glPopMatrix();    // Restore world coordinate system.
+}
+
+// Something to look at, draw a rotating colour cube.
+static void DrawCollision(void)
+{
+	float fSize = 40.0f;
+	const GLfloat cube_vertices [8][3] = {
+        /* +z */ {0.866, 0.866, 0.866}, {0.866, -0.866, 0.866}, {-0.866, -0.866, 0.866}, {-0.866, 0.866, 0.866},
+        /* -z */ {0.866, 0.866, -0.866}, {0.866, -0.866, -0.866}, {-0.866, -0.866, -0.866}, {-0.866, 0.866, -0.866} };
+		const GLubyte cube_vertex_colors [8][4] = {
+			{255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
+			{255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
+    const GLubyte cube_faces [6][4] = { /* ccw-winding */
+        /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
+        /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
+
+	const GLubyte black [4] = {255, 255, 255, 255};
+    glPushMatrix(); // Save world coordinate system.
+    glScalef(fSize, fSize, fSize);
+    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
+//    glDisable(GL_LIGHTING);
+//    glDisable(GL_TEXTURE_2D);
+//    glDisable(GL_BLEND);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
+    glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
+    glEnableClientState(GL_VERTEX_ARRAY);
+//    glEnableClientState(GL_COLOR_ARRAY);
+
     glScalef(gboxsize, gboxsize, gboxsize);
     if (collision_box == cSPHERE)
     {
@@ -199,25 +233,20 @@ static void DrawCube(void)
     }
     if (collision_box == cBOX)
     {
-        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
-        std::cout << "xdist: " << xdist;
-        std::cout << "ydist: " << ydist;
-        std::cout << "zdist: " << zdist;
-        std::cout << std::endl;
+
         if(gboxsize*70 > xdist &&
           gboxsize*70 > ydist &&
           gboxsize*70 > zdist)
 		{
 			glColor4d(100,0,0,1);
 		}
-    	for (i = 0; i < 6; i++) {
+    	for (int i = 0; i < 6; i++) {
     		glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
     	}
 		glColor4d(1,1,1,1);
     }
     glPopMatrix();    // Restore world coordinate system.
 }
-
 static void DrawCubeUpdate(float timeDelta)
 {
 	if (gDrawRotate) {
@@ -574,9 +603,6 @@ static void Reshape(int w, int h)
 
 static void Display(void)
 {
-	ARdouble p[16];
-	ARdouble m[16];
-	ARdouble m2[16];
 
 	// Select correct buffer for this context.
 	glDrawBuffer(GL_BACK);
@@ -606,26 +632,68 @@ static void Display(void)
 
 	if (gPatt_found) {
 
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 4; ++j) {
+            gPatt_trans_norot[i][j] = gPatt_trans[i][j];
+		}
+		}
+		gPatt_trans_norot[0][0] = 1;
+		gPatt_trans_norot[1][0] = 0;
+		gPatt_trans_norot[2][0] = 0;
+		gPatt_trans_norot[0][1] = 0;
+		gPatt_trans_norot[1][1] = 1;
+		gPatt_trans_norot[2][1] = 0;
+        gPatt_trans_norot[0][2] = 0;
+		gPatt_trans_norot[1][2] = 0;
+		gPatt_trans_norot[2][2] = 1;
 
 		// Calculate the camera position relative to the marker.
 		// Replace VIEW_SCALEFACTOR with 1.0 to make one drawing unit equal to 1.0 ARToolKit units (usually millimeters).
-		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans, m, VIEW_SCALEFACTOR);
+		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans_norot, m_norot, 1);
+		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans, m, 1);
+
 #ifdef ARDOUBLE_IS_FLOAT
 		glLoadMatrixf(m);
 #else
 		glLoadMatrixd(m);
 #endif
 		DrawCube();
+#ifdef ARDOUBLE_IS_FLOAT
+		glLoadMatrixf(m_norot);
+#else
+		glLoadMatrixd(m_norot);
+#endif
+		DrawCollision();
 
-		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans2, m2, VIEW_SCALEFACTOR);
-        std::cout << m2[0] << std::endl;
+        for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 4; ++j) {
+            gPatt_trans_norot[i][j] = gPatt_trans2[i][j];
+		}
+				}
+		gPatt_trans_norot[0][0] = 1;
+		gPatt_trans_norot[1][0] = 0;
+		gPatt_trans_norot[2][0] = 0;
+		gPatt_trans_norot[0][1] = 0;
+		gPatt_trans_norot[1][1] = 1;
+		gPatt_trans_norot[2][1] = 0;
+        gPatt_trans_norot[0][2] = 0;
+		gPatt_trans_norot[1][2] = 0;
+		gPatt_trans_norot[2][2] = 1;
+
+        arglCameraViewRH((const ARdouble (*)[4])gPatt_trans_norot, m_norot, 1);
+		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans2, m2, 1);
 #ifdef ARDOUBLE_IS_FLOAT
 		glLoadMatrixf(m2);
 #else
 		glLoadMatrixd(m2);
 #endif
 		DrawCube();
-
+#ifdef ARDOUBLE_IS_FLOAT
+		glLoadMatrixf(m_norot);
+#else
+		glLoadMatrixd(m_norot);
+#endif
+		DrawCollision();
 	} // gPatt_found
 
 	// Any 2D overlays go here.
