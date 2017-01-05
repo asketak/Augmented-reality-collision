@@ -96,6 +96,8 @@ double ydist = 0;
 double zdist = 0;
 int level = 0;
 bool level1flag = false;
+bool level2flag = false;
+bool spaceflag = true;
 
 ARdouble p[16];
 ARdouble m[16];
@@ -105,38 +107,28 @@ ARdouble m2[16];
 //	Functions
 // ============================================================================
 
-GLuint loadTexture(Image* image) {
+static void print(void *font, const char *text, const float x, const float y, int calculateXFromRightEdge, int calculateYFromTopEdge)
+{
+	int i, len;
+	GLfloat x0, y0;
 
-	GLuint textureId;
+	if (!text) return;
 
-	glGenTextures(1, &textureId); //Make room for our texture
+	if (calculateXFromRightEdge) {
+		x0 = windowWidth - x - (float)glutBitmapLength(GLUT_BITMAP_HELVETICA_10, (const unsigned char *)text);
+	} else {
+		x0 = x;
+	}
+	if (calculateYFromTopEdge) {
+		y0 = windowHeight - y - 10.0f;
+	} else {
+		y0 = y;
+	}
+	glRasterPos2f(x0, y0);
 
-	glBindTexture(GL_TEXTURE_2D, textureId); //Tell OpenGL which texture to edit
-
-	//Map the image to the texture
-
-	glTexImage2D(GL_TEXTURE_2D,                //Always GL_TEXTURE_2D
-
-				 0,                            //0 for now
-
-				 GL_RGB,                       //Format OpenGL uses for image
-
-				 image->width, image->height,  //Width and height
-
-				 0,                            //The border of the image
-
-				 GL_RGB, //GL_RGB, because pixels are stored in RGB format
-
-				 GL_UNSIGNED_BYTE, //GL_UNSIGNED_BYTE, because pixels are stored
-
-			//as unsigned numbers
-
-				 image->pixels);               //The actual pixel data
-
-	return textureId; //Returns the id of the texture
-
+	len = (int)strlen(text);
+	for (i = 0; i < len; i++) glutBitmapCharacter(font, text[i]);
 }
-
 // Something to look at, draw a rotating colour cube.
 static void DrawCube(void)
 {
@@ -214,20 +206,19 @@ static void DrawCollision(void)
     glPushMatrix(); // Save world coordinate system.
     glScalef(fSize, fSize, fSize);
     glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
-//    glDisable(GL_LIGHTING);
-//    glDisable(GL_TEXTURE_2D);
-//    glDisable(GL_BLEND);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
     glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
-//    glEnableClientState(GL_COLOR_ARRAY);
 
     glScalef(gboxsize, gboxsize, gboxsize);
     if (collision_box == cSPHERE)
     {
-//        std::cout << "dist: " << dist << " gboxsize " << gboxsize << std::endl;
 		if(dist/2 < gboxsize*40*1.00)
 		{
+			if(level == 1){
+				level = 2;
+				spaceflag = false;
+			}
 			glColor4d(100,0,0,1);
 		}
     	glutWireSphere(1, 20, 20);
@@ -240,6 +231,10 @@ static void DrawCollision(void)
           gboxsize*70 > ydist &&
           gboxsize*70 > zdist)
 		{
+			if(level == 1){
+				level = 2;
+				spaceflag = false;
+			}
 			glColor4d(100,0,0,1);
 		}
     	for (int i = 0; i < 6; i++) {
@@ -248,123 +243,6 @@ static void DrawCollision(void)
 		glColor4d(1,1,1,1);
     }
     glPopMatrix();    // Restore world coordinate system.
-}
-static void DrawCubeUpdate(float timeDelta)
-{
-	if (gDrawRotate) {
-		gDrawRotateAngle += timeDelta * 45.0f; // Rotate cube at 45 degrees per second.
-		if (gDrawRotateAngle > 360.0f) gDrawRotateAngle -= 360.0f;
-	}
-}
-
-static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p, ARHandle **arhandle, AR3DHandle **ar3dhandle)
-{
-	ARParam			cparam;
-	int				xsize, ysize;
-	AR_PIXEL_FORMAT pixFormat;
-
-    // Open the video path.
-	if (arVideoOpen(vconf) < 0) {
-		ARLOGe("setupCamera(): Unable to open connection to camera.\n");
-		return (FALSE);
-	}
-
-    // Find the size of the window.
-	if (arVideoGetSize(&xsize, &ysize) < 0) {
-		ARLOGe("setupCamera(): Unable to determine camera frame size.\n");
-		arVideoClose();
-		return (FALSE);
-	}
-	ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
-
-	// Get the format in which the camera is returning pixels.
-	pixFormat = arVideoGetPixelFormat();
-	if (pixFormat == AR_PIXEL_FORMAT_INVALID) {
-		ARLOGe("setupCamera(): Camera is using unsupported pixel format.\n");
-		arVideoClose();
-		return (FALSE);
-	}
-
-	// Load the camera parameters, resize for the window and init.
-	if (arParamLoad(cparam_name, 1, &cparam) < 0) {
-		ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name);
-		arVideoClose();
-		return (FALSE);
-	}
-	if (cparam.xsize != xsize || cparam.ysize != ysize) {
-		ARLOGw("*** Camera Parameter resized from %d, %d. ***\n", cparam.xsize, cparam.ysize);
-		arParamChangeSize(&cparam, xsize, ysize, &cparam);
-	}
-#ifdef DEBUG
-	ARLOG("*** Camera Parameter ***\n");
-	arParamDisp(&cparam);
-#endif
-	if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
-		ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
-		return (FALSE);
-	}
-
-	if ((*arhandle = arCreateHandle(*cparamLT_p)) == NULL) {
-		ARLOGe("setupCamera(): Error: arCreateHandle.\n");
-		return (FALSE);
-	}
-	if (arSetPixelFormat(*arhandle, pixFormat) < 0) {
-		ARLOGe("setupCamera(): Error: arSetPixelFormat.\n");
-		return (FALSE);
-	}
-	if (arSetDebugMode(*arhandle, AR_DEBUG_DISABLE) < 0) {
-		ARLOGe("setupCamera(): Error: arSetDebugMode.\n");
-		return (FALSE);
-	}
-	if ((*ar3dhandle = ar3DCreateHandle(&cparam)) == NULL) {
-		ARLOGe("setupCamera(): Error: ar3DCreateHandle.\n");
-		return (FALSE);
-	}
-
-	if (arVideoCapStart() != 0) {
-		ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
-		return (FALSE);
-	}
-
-	return (TRUE);
-}
-
-static int setupMarker(ARHandle *arhandle, ARPattHandle **pattHandle_p)
-{
-	if ((*pattHandle_p = arPattCreateHandle2(16,10)) == NULL) {
-		ARLOGe("setupMarker(): Error: arPattCreateHandle.\n");
-		return (FALSE);
-	}
-
-	// Loading only 1 pattern in this example.
-	if ((gPatt_id = arPattLoad(*pattHandle_p, patt_name)) < 0) {
-		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
-		arPattDeleteHandle(*pattHandle_p);
-		return (FALSE);
-	}
-
-	if ((gPatt_id2 = arPattLoad(*pattHandle_p, patt_name2)) < 0) {
-		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
-		arPattDeleteHandle(*pattHandle_p);
-		return (FALSE);
-	}
-
-	arPattAttach(arhandle, *pattHandle_p);
-
-	return (TRUE);
-}
-
-static void cleanup(void)
-{
-	arglCleanup(gArglSettings);
-	gArglSettings = NULL;
-	arPattDetach(gARHandle);
-	arPattDeleteHandle(gARPattHandle);
-	arVideoCapStop();
-	ar3DDeleteHandle(&gAR3DHandle);
-	arDeleteHandle(gARHandle);
-	arParamLTFree(&gCparamLT);
-	arVideoClose();
 }
 
 static void Keyboard(unsigned char key, int x, int y)
@@ -380,11 +258,10 @@ static void Keyboard(unsigned char key, int x, int y)
 		exit(0);
 		break;
 		case ' ':
-//		gDrawRotate = !gDrawRotate;
-		std::cout << "in space" << std::endl;
-			if(level == 0){
-				std::cout << "in level" << std::endl;
-				level = 1;
+			std::cout << "in space" << std::endl;
+			if(spaceflag){
+					level += 1;
+					spaceflag = false;
 			}
 		break;
 		case 'X':
@@ -503,7 +380,6 @@ static void mainLoop(void)
 	ms_prev = ms;
 
 	// Update drawing.
-	DrawCubeUpdate(s_elapsed);
 
 	// Grab a video frame.
 	if ((image = arVideoGetImage()) != NULL) {
@@ -547,6 +423,10 @@ static void mainLoop(void)
             if(level > 0){
 				level1flag = true;
 			}
+			if(level == 1){
+				level2flag = true;
+			}
+
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
 			if (s_elapsedcurl > 2) {
 				ms_prevcurl = mscurl;
@@ -590,25 +470,6 @@ static void mainLoop(void)
 	}
 
 	glutPostRedisplay();
-}
-
-
-static void Visibility(int visible)
-{
-	if (visible == GLUT_VISIBLE) {
-		glutIdleFunc(mainLoop);
-	} else {
-		glutIdleFunc(NULL);
-	}
-}
-
-static void Reshape(int w, int h)
-{
-	windowWidth = w;
-	windowHeight = h;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 }
 
 static void Display(void)
@@ -725,6 +586,338 @@ static void Display(void)
 	glutSwapBuffers();
 }
 
+
+void level4(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "SUPERPOWERS ACTIVATED ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "You can now change the objects and collision detection strategy");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Bounding boxes are boxes, that enclose the objects ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Because bounding boxes are perpendicular to world axis,");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "we can compute if bounding boxes collide just by distance of objects on each axis");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "You can see, that bounding boxes does't rotate when you rotate objects");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "You know the drill, move objects close enough, so that bounding boxes collide");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	}
+
+void level3(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "LEVEL 3/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Bounding boxes");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Bounding boxes are boxes, that enclose the objects ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Because bounding boxes are perpendicular to world axis,");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "we can compute if bounding boxes collide just by distance of objects on each axis");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "You can see, that bounding boxes does't rotate when you rotate objects");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "You know the drill, move objects close enough, so that bounding boxes collide");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	}
+
+void level2(){
+	int line = 1;
+	char text[256];
+	snprintf(text, sizeof(text), "LEVEL 2/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "YOU ARE DOING GOOD");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: There are two simple ways to detect, if objects collide");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "The easier one is, to have sphere around object ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "And detect, if spheres collide");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "To detect, if spheres collide, we just need to know the distance between objects and radius of spheres");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Lets try it, move cubes closer enough, so they collide");
+	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	if(level2flag)
+		snprintf(text, sizeof(text), "You can see, that spheres touched before the cubes");
+		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+	}
+
+
+void level1(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "LEVEL 1/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+    if(level1flag){
+        snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
+        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+        line++;
+        snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
+        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+    }
+}
+
+void level0(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "      WELCOME TO OBJECT BLASTER");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "    THE GAME OF COLLIDING OBJECTS ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: There are 3 levels in this game:");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Do what this text says to get to next level");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Pass all 3 levels to unlock superpowers!");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Press ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	glColor3ub(200, 0, 0);
+	snprintf(text, sizeof(text), "SPACE");
+	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	glColor3ub(255, 255, 255);
+	snprintf(text, sizeof(text), " to start first level");
+	print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	}
+
+static void printMode()
+{
+	int height = glutGet(GLUT_WINDOW_HEIGHT);
+	int menu_width = 400;
+	int menu_height = 650;
+    drawBackground( menu_width, menu_height,0, height-menu_height);
+	glColor3ub(255, 255, 255);
+
+    std::cout << level << std::endl;
+	switch  (level) {
+		case 0:
+			level0();
+			break;
+		case 1:
+			level1();
+			break;
+		case 2:
+			level2();
+			break;
+		case 3:
+			level3();
+			break;
+	}
+
+}
+
+
+
+
+
+static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p, ARHandle **arhandle, AR3DHandle **ar3dhandle)
+{
+	ARParam			cparam;
+	int				xsize, ysize;
+	AR_PIXEL_FORMAT pixFormat;
+
+	// Open the video path.
+	if (arVideoOpen(vconf) < 0) {
+		ARLOGe("setupCamera(): Unable to open connection to camera.\n");
+		return (FALSE);
+	}
+
+	// Find the size of the window.
+	if (arVideoGetSize(&xsize, &ysize) < 0) {
+		ARLOGe("setupCamera(): Unable to determine camera frame size.\n");
+		arVideoClose();
+		return (FALSE);
+	}
+	ARLOGi("Camera image size (x,y) = (%d,%d)\n", xsize, ysize);
+
+	// Get the format in which the camera is returning pixels.
+	pixFormat = arVideoGetPixelFormat();
+	if (pixFormat == AR_PIXEL_FORMAT_INVALID) {
+		ARLOGe("setupCamera(): Camera is using unsupported pixel format.\n");
+		arVideoClose();
+		return (FALSE);
+	}
+
+	// Load the camera parameters, resize for the window and init.
+	if (arParamLoad(cparam_name, 1, &cparam) < 0) {
+		ARLOGe("setupCamera(): Error loading parameter file %s for camera.\n", cparam_name);
+		arVideoClose();
+		return (FALSE);
+	}
+	if (cparam.xsize != xsize || cparam.ysize != ysize) {
+		ARLOGw("*** Camera Parameter resized from %d, %d. ***\n", cparam.xsize, cparam.ysize);
+		arParamChangeSize(&cparam, xsize, ysize, &cparam);
+	}
+#ifdef DEBUG
+	ARLOG("*** Camera Parameter ***\n");
+	arParamDisp(&cparam);
+#endif
+	if ((*cparamLT_p = arParamLTCreate(&cparam, AR_PARAM_LT_DEFAULT_OFFSET)) == NULL) {
+		ARLOGe("setupCamera(): Error: arParamLTCreate.\n");
+		return (FALSE);
+	}
+
+	if ((*arhandle = arCreateHandle(*cparamLT_p)) == NULL) {
+		ARLOGe("setupCamera(): Error: arCreateHandle.\n");
+		return (FALSE);
+	}
+	if (arSetPixelFormat(*arhandle, pixFormat) < 0) {
+		ARLOGe("setupCamera(): Error: arSetPixelFormat.\n");
+		return (FALSE);
+	}
+	if (arSetDebugMode(*arhandle, AR_DEBUG_DISABLE) < 0) {
+		ARLOGe("setupCamera(): Error: arSetDebugMode.\n");
+		return (FALSE);
+	}
+	if ((*ar3dhandle = ar3DCreateHandle(&cparam)) == NULL) {
+		ARLOGe("setupCamera(): Error: ar3DCreateHandle.\n");
+		return (FALSE);
+	}
+
+	if (arVideoCapStart() != 0) {
+		ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
+		return (FALSE);
+	}
+
+	return (TRUE);
+}
+
+static int setupMarker(ARHandle *arhandle, ARPattHandle **pattHandle_p)
+{
+	if ((*pattHandle_p = arPattCreateHandle2(16,10)) == NULL) {
+		ARLOGe("setupMarker(): Error: arPattCreateHandle.\n");
+		return (FALSE);
+	}
+
+	// Loading only 1 pattern in this example.
+	if ((gPatt_id = arPattLoad(*pattHandle_p, patt_name)) < 0) {
+		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
+		arPattDeleteHandle(*pattHandle_p);
+		return (FALSE);
+	}
+
+	if ((gPatt_id2 = arPattLoad(*pattHandle_p, patt_name2)) < 0) {
+		ARLOGe("setupMarker(): Error loading pattern file %s.\n", patt_name);
+		arPattDeleteHandle(*pattHandle_p);
+		return (FALSE);
+	}
+
+	arPattAttach(arhandle, *pattHandle_p);
+
+	return (TRUE);
+}
+
+static void cleanup(void)
+{
+	arglCleanup(gArglSettings);
+	gArglSettings = NULL;
+	arPattDetach(gARHandle);
+	arPattDeleteHandle(gARPattHandle);
+	arVideoCapStop();
+	ar3DDeleteHandle(&gAR3DHandle);
+	arDeleteHandle(gARHandle);
+	arParamLTFree(&gCparamLT);
+	arVideoClose();
+}
+
+static void Visibility(int visible)
+{
+	if (visible == GLUT_VISIBLE) {
+		glutIdleFunc(mainLoop);
+	} else {
+		glutIdleFunc(NULL);
+	}
+}
+
+static void Reshape(int w, int h)
+{
+	windowWidth = w;
+	windowHeight = h;
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
+}
+
+static void drawBackground(const float width, const float height, const float x, const float y)
+{
+	GLfloat vertices[4][2];
+
+	vertices[0][0] = x; vertices[0][1] = y;
+	vertices[1][0] = width + x; vertices[1][1] = y;
+	vertices[2][0] = width + x; vertices[2][1] = height + y;
+	vertices[3][0] = x; vertices[3][1] = height + y;
+
+	glLoadIdentity();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glVertexPointer(2, GL_FLOAT, 0, vertices);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glColor4f(0.0f, 0.0f, 0.0f, 0.5f);	// 50% transparent black.
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Opaque white.
+	//glLineWidth(1.0f);
+	//glDrawArrays(GL_LINE_LOOP, 0, 4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisable(GL_BLEND);
+}
+
+
 int main(int argc, char** argv)
 {
 	char glutGamemode[32];
@@ -771,153 +964,4 @@ int main(int argc, char** argv)
 	glutMainLoop();
 
 	return (0);
-}
-
-static void print(void *font, const char *text, const float x, const float y, int calculateXFromRightEdge, int calculateYFromTopEdge)
-{
-	int i, len;
-	GLfloat x0, y0;
-
-	if (!text) return;
-
-	if (calculateXFromRightEdge) {
-		x0 = windowWidth - x - (float)glutBitmapLength(GLUT_BITMAP_HELVETICA_10, (const unsigned char *)text);
-	} else {
-		x0 = x;
-	}
-	if (calculateYFromTopEdge) {
-		y0 = windowHeight - y - 10.0f;
-	} else {
-		y0 = y;
-	}
-	glRasterPos2f(x0, y0);
-
-	len = (int)strlen(text);
-	for (i = 0; i < len; i++) glutBitmapCharacter(font, text[i]);
-}
-
-static void drawBackground(const float width, const float height, const float x, const float y)
-{
-	GLfloat vertices[4][2];
-
-	vertices[0][0] = x; vertices[0][1] = y;
-	vertices[1][0] = width + x; vertices[1][1] = y;
-	vertices[2][0] = width + x; vertices[2][1] = height + y;
-	vertices[3][0] = x; vertices[3][1] = height + y;
-
-	glLoadIdentity();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-	glVertexPointer(2, GL_FLOAT, 0, vertices);
-	glEnableClientState(GL_VERTEX_ARRAY);
-    glColor4f(0.0f, 0.0f, 0.0f, 0.5f);	// 50% transparent black.
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Opaque white.
-    //glLineWidth(1.0f);
-    //glDrawArrays(GL_LINE_LOOP, 0, 4);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisable(GL_BLEND);
-}
-
-void level1(){
-	int line = 1;
-	char text[256];
-		snprintf(text, sizeof(text), "LEVEL 1/3");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "===================================");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	if(level1flag){
-	snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-    }
-	}
-
-void level2(){
-	int line = 1;
-	char text[256];
-		snprintf(text, sizeof(text), "LEVEL 1/3");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "===================================");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	snprintf(text, sizeof(text), "*: THAT's ALL, GL HF");
-	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	}
-
-void level0(){
-	int line = 1;
-	char text[256];
-		snprintf(text, sizeof(text), "      WELCOME TO OBJECT BLASTER");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "    THE GAME OF COLLIDING OBJECTS ");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "===================================");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: There are 3 levels in this game:");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Do what this text says to get to next level");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Pass all 3 levels to unlock superpowers!");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Press ");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	glColor3ub(200, 0, 0);
-	snprintf(text, sizeof(text), "SPACE");
-	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	glColor3ub(255, 255, 255);
-	snprintf(text, sizeof(text), " to start first level");
-	print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	}
-
-static void printMode()
-{
-	int height = glutGet(GLUT_WINDOW_HEIGHT);
-	int menu_width = 400;
-	int menu_height = 650;
-    drawBackground( menu_width, menu_height,0, height-menu_height);
-	glColor3ub(255, 255, 255);
-
-	switch  (level) {
-		case 0:
-			level0();
-			break;
-		case 1:
-			level1();
-			break;
-		case 2:
-			level2();
-			break;
-	}
-
 }
