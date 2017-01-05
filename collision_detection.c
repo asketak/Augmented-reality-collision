@@ -85,7 +85,7 @@ static int gDrawRotate = FALSE;
 static float gDrawRotateAngle = 10;			// For use in drawing.
 
 // menu, changing properties of objects
-static float gboxsize = 1.0;			// for resizing collision box
+static float gboxsize = 2.0;			// for resizing collision box
 typedef enum {cBOX, cSPHERE} collision_type;
 typedef enum {BOX, SPHERE} object_type;
 static collision_type collision_box = cBOX;
@@ -99,6 +99,7 @@ bool level1flag = false;
 bool level1flagend = false;
 bool level2flag = false;
 bool spaceflag = true;
+bool level3flag = false;
 
 ARdouble p[16];
 ARdouble m[16];
@@ -236,6 +237,14 @@ static void DrawCollision(void)
 				level1flagend = true;
 				spaceflag = true;
 			}
+			if(level == 2){
+				level2flag = true;
+				spaceflag = true;
+			}
+            if(level == 3){
+				level3flag = true;
+				spaceflag = true;
+			}
 			glColor4d(100,0,0,1);
 		}
     	for (int i = 0; i < 6; i++) {
@@ -265,24 +274,8 @@ static void Keyboard(unsigned char key, int x, int y)
 					spaceflag = false;
 			}
 		break;
-		case 'X':
-		case 'x':
-		arGetImageProcMode(gARHandle, &mode);
-		switch (mode) {
-			case AR_IMAGE_PROC_FRAME_IMAGE:  mode = AR_IMAGE_PROC_FIELD_IMAGE; break;
-			case AR_IMAGE_PROC_FIELD_IMAGE:
-			default: mode = AR_IMAGE_PROC_FRAME_IMAGE; break;
-		}
-		arSetImageProcMode(gARHandle, mode);
-		break;
-		case 'C':
-		case 'c':
-		ARLOGe("*** Camera - %f (frame/sec)\n", (double)gCallCountMarkerDetect/arUtilTimer());
-		gCallCountMarkerDetect = 0;
-		arUtilTimerReset();
-		break;
-		case 'a':
-		case 'A':
+		case 'd':
+		case 'D':
 		arGetLabelingThreshMode(gARHandle, &modea);
 		switch (modea) {
 			case AR_LABELING_THRESH_MODE_MANUAL:        modea = AR_LABELING_THRESH_MODE_AUTO_MEDIAN; break;
@@ -292,57 +285,29 @@ static void Keyboard(unsigned char key, int x, int y)
 			case AR_LABELING_THRESH_MODE_AUTO_BRACKETING:
 			default: modea = AR_LABELING_THRESH_MODE_MANUAL; break;
 		}
-		case 'e':
-		case 'E':
+		case 's':
+		case 'S':
 		switch (collision_box) {
 			case cBOX:        collision_box = cSPHERE; break;
 			case cSPHERE:   collision_box = cBOX; break;
 		}
+		case 'a':
+		case 'A':
+			switch (object_model) {
+				case BOX:        object_model = SPHERE; break;
+				case SPHERE:   object_model = BOX; break;
+			}
 		arSetLabelingThreshMode(gARHandle, modea);
 		break;
 		case '-':
-		threshChange = -5;
+			gboxsize += 0.1;
 		break;
 		case '+':
 		case '=':
-		threshChange = +5;
-		break;
-		case 'D':
-		case 'd':
-		arGetDebugMode(gARHandle, &mode);
-		arSetDebugMode(gARHandle, !mode);
-		break;
-		case 's':
-		case 'S':
-		if (!gARTImageSavePlease) gARTImageSavePlease = TRUE;
-		break;
-		case '?':
-		case '/':
-		gShowHelp++;
-		if (gShowHelp > 1) gShowHelp = 0;
-		break;
-		case 'm':
-		case 'M':
-		gShowMode = !gShowMode;
-		break;
-		case 'o':
-		case 'O':
-		gboxsize += 0.1;
-		break;
-		case 'k':
-		case 'K':
-		gboxsize -= 0.1;
+			gboxsize -= 0.1;
 		break;
 		default:
 		break;
-	}
-	if (threshChange) {
-		int threshhold;
-		arGetLabelingThresh(gARHandle, &threshhold);
-		threshhold += threshChange;
-		if (threshhold < 0) threshhold = 0;
-		if (threshhold > 255) threshhold = 255;
-		arSetLabelingThresh(gARHandle, threshhold);
 	}
 
 }
@@ -425,26 +390,7 @@ static void mainLoop(void)
 				level1flag = true;
 			}
 
-			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
-			if (s_elapsedcurl > 2) {
-				ms_prevcurl = mscurl;
 
-				std::string fut = params.get();
-				params = std::async(std::launch::async,curl,url);
-
-
-				std::vector<std::string> prms = split(fut,':');
-                    switch (prms[0][0]) {
-                        case '2':   collision_box = cSPHERE; break;
-                        case '1':   collision_box = cBOX; break;
-                    }
-                    switch (prms[1][0]) {
-                        case '2':   object_model = SPHERE; break;
-                        case '1':   object_model = BOX; break;
-                    }
-                    float sizee = strtof(prms[2].c_str(),NULL);
-                    gboxsize = (float)sizee/(float)30 ;
-                }
                 // Get the transformation between the marker and the real camera into gPatt_trans.
                 err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[0]), gPatt_width, gPatt_trans);
                 err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[1]), gPatt_width, gPatt_trans2);
@@ -600,25 +546,35 @@ void level4(){
 	snprintf(text, sizeof(text), "===================================");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "Bounding boxes are boxes, that enclose the objects ");
+	snprintf(text, sizeof(text), "A: Switches objects");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "Because bounding boxes are perpendicular to world axis,");
+	snprintf(text, sizeof(text), "S: Switches collision detection");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "we can compute if bounding boxes collide just by distance of objects on each axis");
+	snprintf(text, sizeof(text), "+/-: Change the size of bounding box/sphere");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "You can see, that bounding boxes does't rotate when you rotate objects");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "You know the drill, move objects close enough, so that bounding boxes collide");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	}
 
 void level3(){
 	int line = 1;
 	char text[256];
+	if(level3flag){
+		snprintf(text, sizeof(text), "WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "*: Press ");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(200, 0, 0);
+		snprintf(text, sizeof(text), "SPACE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(255, 255, 255);
+		snprintf(text, sizeof(text), " to activate superpowers");
+		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		return;
+	}
 		snprintf(text, sizeof(text), "LEVEL 3/3");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
@@ -647,35 +603,49 @@ void level3(){
 void level2(){
 	int line = 1;
 	char text[256];
-	snprintf(text, sizeof(text), "LEVEL 2/3");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "YOU ARE DOING GOOD");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "===================================");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: There are two simple ways to detect, if objects collide");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "The easier one is, to have sphere around object ");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "And detect, if spheres collide");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "To detect, if spheres collide, we just need to know the distance between objects and radius of spheres");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "Lets try it, move cubes closer enough, so they collide");
-	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	if(level2flag)
-		snprintf(text, sizeof(text), "You can see, that spheres touched before the cubes");
+	if(!level2flag){
+		snprintf(text, sizeof(text), "LEVEL 2/3");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "YOU ARE DOING GOOD");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "===================================");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "*: There are two simple ways to detect, if objects collide");
+		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "The easier one is, to have sphere around objects. ");
+		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "We just detect, if spheres collide.");
+		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "We can see that by comparing distance between objects and radius of spheres");
+		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "Lets try it, move cubes closer enough, so they collide");
+		print(GLUT_BITMAP_HELVETICA_12,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+	} else {
+		snprintf(text, sizeof(text), "You can see, that cubes can not touch without triggering the spheres contact");
 		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
+				snprintf(text, sizeof(text), "WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "*: Press ");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(200, 0, 0);
+		snprintf(text, sizeof(text), "SPACE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(255, 255, 255);
+		snprintf(text, sizeof(text), " to start third level");
+		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
 	}
+}
 
 
 void level1(){
@@ -773,13 +743,12 @@ static void printMode()
 		case 3:
 			level3();
 			break;
+		case 4:
+			level4();
+			break;
 	}
 
 }
-
-
-
-
 
 static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p, ARHandle **arhandle, AR3DHandle **ar3dhandle)
 {
