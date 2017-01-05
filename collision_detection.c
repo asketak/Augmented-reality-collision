@@ -79,7 +79,7 @@ std::future<std::string> params = std::async(curl,url);
 // Drawing.
 static ARParamLT *gCparamLT = NULL;
 static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
-static int gShowHelp = 1;
+static int gShowHelp = 0;
 static int gShowMode = 1;
 static int gDrawRotate = FALSE;
 static float gDrawRotateAngle = 10;			// For use in drawing.
@@ -94,6 +94,8 @@ double dist = 0;
 double xdist = 0;
 double ydist = 0;
 double zdist = 0;
+int level = 0;
+bool level1flag = false;
 
 ARdouble p[16];
 ARdouble m[16];
@@ -378,7 +380,12 @@ static void Keyboard(unsigned char key, int x, int y)
 		exit(0);
 		break;
 		case ' ':
-		gDrawRotate = !gDrawRotate;
+//		gDrawRotate = !gDrawRotate;
+		std::cout << "in space" << std::endl;
+			if(level == 0){
+				std::cout << "in level" << std::endl;
+				level = 1;
+			}
 		break;
 		case 'X':
 		case 'x':
@@ -537,6 +544,9 @@ static void mainLoop(void)
 		}
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
+            if(level > 0){
+				level1flag = true;
+			}
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
 			if (s_elapsedcurl > 2) {
 				ms_prevcurl = mscurl;
@@ -711,11 +721,6 @@ static void Display(void)
 	if (gShowMode) {
 		printMode();
 	}
-	if (gShowHelp) {
-		if (gShowHelp == 1) {
-			printHelpKeys();
-		}
-	}
 
 	glutSwapBuffers();
 }
@@ -768,7 +773,7 @@ int main(int argc, char** argv)
 	return (0);
 }
 
-static void print(const char *text, const float x, const float y, int calculateXFromRightEdge, int calculateYFromTopEdge)
+static void print(void *font, const char *text, const float x, const float y, int calculateXFromRightEdge, int calculateYFromTopEdge)
 {
 	int i, len;
 	GLfloat x0, y0;
@@ -788,7 +793,7 @@ static void print(const char *text, const float x, const float y, int calculateX
 	glRasterPos2f(x0, y0);
 
 	len = (int)strlen(text);
-	for (i = 0; i < len; i++) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, text[i]);
+	for (i = 0; i < len; i++) glutBitmapCharacter(font, text[i]);
 }
 
 static void drawBackground(const float width, const float height, const float x, const float y)
@@ -799,6 +804,7 @@ static void drawBackground(const float width, const float height, const float x,
 	vertices[1][0] = width + x; vertices[1][1] = y;
 	vertices[2][0] = width + x; vertices[2][1] = height + y;
 	vertices[3][0] = x; vertices[3][1] = height + y;
+
 	glLoadIdentity();
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
@@ -813,92 +819,105 @@ static void drawBackground(const float width, const float height, const float x,
     glDisable(GL_BLEND);
 }
 
-static void printHelpKeys()
-{
-	int i;
-	GLfloat  w, bw, bh;
-	const char *helpText[] = {
-		"Keys:\n",
-		" ? or /        Show/hide this help.",
-		" q or [esc]    Quit program.",
-		" d             Activate / deactivate debug mode.",
-		" m             Toggle display of mode info.",
-		" a             Toggle between available threshold modes.",
-		" - and +       Switch to manual threshold mode, and adjust threshhold up/down by 5.",
-		" x             Change image processing mode.",
-		" c             Calulcate frame rate.",
-	};
-#define helpTextLineCount (sizeof(helpText)/sizeof(char *))
-
-	bw = 0.0f;
-	for (i = 0; i < helpTextLineCount; i++) {
-		w = (float)glutBitmapLength(GLUT_BITMAP_HELVETICA_10, (unsigned char *)helpText[i]);
-		if (w > bw) bw = w;
+void level1(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "LEVEL 1/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	if(level1flag){
+	snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+    }
 	}
-    bh = helpTextLineCount * 10.0f /* character height */+ (helpTextLineCount - 1) * 2.0f /* line spacing */;
-	drawBackground(bw, bh, 2.0f, 2.0f);
 
-	for (i = 0; i < helpTextLineCount; i++) print(helpText[i], 2.0f, (helpTextLineCount - 1 - i)*12.0f + 2.0f, 0, 0);;
-}
+void level2(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "LEVEL 1/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	snprintf(text, sizeof(text), "*: THAT's ALL, GL HF");
+	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	}
+
+void level0(){
+	int line = 1;
+	char text[256];
+		snprintf(text, sizeof(text), "      WELCOME TO OBJECT BLASTER");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "    THE GAME OF COLLIDING OBJECTS ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: There are 3 levels in this game:");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Do what this text says to get to next level");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Pass all 3 levels to unlock superpowers!");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "*: Press ");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	glColor3ub(200, 0, 0);
+	snprintf(text, sizeof(text), "SPACE");
+	print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	glColor3ub(255, 255, 255);
+	snprintf(text, sizeof(text), " to start first level");
+	print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	}
 
 static void printMode()
 {
-	int len, thresh, line, mode, xsize, ysize;
-	AR_LABELING_THRESH_MODE threshMode;
-	ARdouble tempF;
-	char text[256], *text_p;
-
+	int height = glutGet(GLUT_WINDOW_HEIGHT);
+	int menu_width = 400;
+	int menu_height = 650;
+    drawBackground( menu_width, menu_height,0, height-menu_height);
 	glColor3ub(255, 255, 255);
-	line = 1;
 
-    // Image size and processing mode.
-	arVideoGetSize(&xsize, &ysize);
-	arGetImageProcMode(gARHandle, &mode);
-	if (mode == AR_IMAGE_PROC_FRAME_IMAGE) text_p = (char *) "full frame";
-	else text_p = (char *)"even field only";
-	snprintf(text, sizeof(text), "Processing %dx%d video frames %s", xsize, ysize, text_p);
-	print(text, 2.0f,  (line - 1)*12.0f + 2.0f, 0, 1);
-	line++;
-
-    // Threshold mode, and threshold, if applicable.
-	arGetLabelingThreshMode(gARHandle, &threshMode);
-	switch (threshMode) {
-		case AR_LABELING_THRESH_MODE_MANUAL: text_p = (char *)"MANUAL"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_MEDIAN: text_p = (char *)"AUTO_MEDIAN"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_OTSU: text_p = (char *)"AUTO_OTSU"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE: text_p = (char *)"AUTO_ADAPTIVE"; break;
-		case AR_LABELING_THRESH_MODE_AUTO_BRACKETING: text_p = (char *)"AUTO_BRACKETING"; break;
-		default: text_p = (char *)"UNKNOWN"; break;
+	switch  (level) {
+		case 0:
+			level0();
+			break;
+		case 1:
+			level1();
+			break;
+		case 2:
+			level2();
+			break;
 	}
-	snprintf(text, sizeof(text), "Threshold mode: %s", text_p);
-	if (threshMode != AR_LABELING_THRESH_MODE_AUTO_ADAPTIVE) {
-		arGetLabelingThresh(gARHandle, &thresh);
-		len = (int)strlen(text);
-		snprintf(text + len, sizeof(text) - len, ", thresh=%d", thresh);
-	}
-	print(text, 2.0f,  (line - 1)*12.0f + 2.0f, 0, 1);
-	line++;
-
-    // Border size, image processing mode, pattern detection mode.
-	arGetBorderSize(gARHandle, &tempF);
-	snprintf(text, sizeof(text), "Border: %0.1f%%", tempF*100.0);
-	arGetPatternDetectionMode(gARHandle, &mode);
-	switch (mode) {
-		case AR_TEMPLATE_MATCHING_COLOR: text_p = (char *)"Colour template (pattern)"; break;
-		case AR_TEMPLATE_MATCHING_MONO: text_p = (char *)"Mono template (pattern)"; break;
-		case AR_MATRIX_CODE_DETECTION: text_p = (char *)"Matrix (barcode)"; break;
-		case AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX: text_p = (char *)"Colour template + Matrix (2 pass, pattern + barcode)"; break;
-		case AR_TEMPLATE_MATCHING_MONO_AND_MATRIX: text_p = (char *)"Mono template + Matrix (2 pass, pattern + barcode "; break;
-		default: text_p = (char *)"UNKNOWN"; break;
-	}
-	len = (int)strlen(text);
-	snprintf(text + len, sizeof(text) - len, ", Pattern detection mode: %s", text_p);
-	print(text, 2.0f,  (line - 1)*12.0f + 2.0f, 0, 1);
-	line++;
-
-    // Window size.
-	snprintf(text, sizeof(text), "Drawing into %dx%d window", windowWidth, windowHeight);
-	print(text, 2.0f,  (line - 1)*12.0f + 2.0f, 0, 1);
-	line++;
 
 }
