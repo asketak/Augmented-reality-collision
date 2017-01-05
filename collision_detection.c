@@ -96,6 +96,7 @@ double ydist = 0;
 double zdist = 0;
 int level = 0;
 bool level1flag = false;
+bool level1flagend = false;
 bool level2flag = false;
 bool spaceflag = true;
 
@@ -216,24 +217,24 @@ static void DrawCollision(void)
 		if(dist/2 < gboxsize*40*1.00)
 		{
 			if(level == 1){
-				level = 2;
-				spaceflag = false;
+				level1flagend = true;
+				spaceflag = true;
 			}
 			glColor4d(100,0,0,1);
 		}
-    	glutWireSphere(1, 20, 20);
+		glutWireSphere(1, 20, 20);
 		glColor4d(1,1,1,1);
-    }
-    if (collision_box == cBOX)
-    {
+	}
+	if (collision_box == cBOX)
+	{
 
-        if(gboxsize*70 > xdist &&
-          gboxsize*70 > ydist &&
-          gboxsize*70 > zdist)
+		if(gboxsize*70 > xdist &&
+		   gboxsize*70 > ydist &&
+		   gboxsize*70 > zdist)
 		{
 			if(level == 1){
-				level = 2;
-				spaceflag = false;
+				level1flagend = true;
+				spaceflag = true;
 			}
 			glColor4d(100,0,0,1);
 		}
@@ -422,9 +423,6 @@ static void mainLoop(void)
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
             if(level > 0){
 				level1flag = true;
-			}
-			if(level == 1){
-				level2flag = true;
 			}
 
 			s_elapsedcurl = (float)(mscurl - ms_prevcurl) * 0.001f;
@@ -683,7 +681,23 @@ void level2(){
 void level1(){
 	int line = 1;
 	char text[256];
-		snprintf(text, sizeof(text), "LEVEL 1/3");
+	if(level1flagend){
+		snprintf(text, sizeof(text), "WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "*: Press ");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(200, 0, 0);
+		snprintf(text, sizeof(text), "SPACE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(255, 255, 255);
+		snprintf(text, sizeof(text), " to start second level");
+		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+        return;
+	}
+
+	snprintf(text, sizeof(text), "LEVEL 1/3");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
 	snprintf(text, sizeof(text), "===================================");
@@ -702,6 +716,7 @@ void level1(){
         snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
         print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
     }
+
 }
 
 void level0(){
