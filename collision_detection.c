@@ -416,7 +416,7 @@ static void mainLoop(void)
 		if(level == 3){
 			gboxsize = 2;
             collision_box = cBOX;
-			object_model = SPHERE;
+			object_model = BOX;
 		}
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
@@ -590,19 +590,19 @@ void level4(){
 		snprintf(text, sizeof(text), "SUPERPOWERS ACTIVATED ");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "You can now change the objects and collision detection strategy");
+	snprintf(text, sizeof(text), "You can now change properties of objects");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "");
+	snprintf(text, sizeof(text), "  ");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
 	snprintf(text, sizeof(text), "===================================");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "A: Switches objects");
+	snprintf(text, sizeof(text), "A: Switch objects (cube/earth)");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "S: Switches collision detection");
+	snprintf(text, sizeof(text), "S: Switches collision detection(box/sphere)");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
 	snprintf(text, sizeof(text), "+/-: Change the size of bounding box/sphere");
@@ -613,22 +613,8 @@ void level4(){
 void level3(){
 	int line = 1;
 	char text[256];
-	if(level3flag){
-		snprintf(text, sizeof(text), "WELL DONE");
-		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		snprintf(text, sizeof(text), "*: Press ");
-		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		glColor3ub(200, 0, 0);
-		snprintf(text, sizeof(text), "SPACE");
-		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		glColor3ub(255, 255, 255);
-		snprintf(text, sizeof(text), " to activate superpowers");
-		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		return;
-	}
-		snprintf(text, sizeof(text), "LEVEL 3/3");
+
+	snprintf(text, sizeof(text), "LEVEL 3/3");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
 	snprintf(text, sizeof(text), "Bounding boxes");
@@ -637,26 +623,41 @@ void level3(){
 	snprintf(text, sizeof(text), "===================================");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "Bounding boxes are boxes, that enclose the objects ");
+	snprintf(text, sizeof(text), "Bounding boxes are boxes, that enclose objects.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "Because bounding boxes are perpendicular to world axis,");
+	snprintf(text, sizeof(text), "Bounding boxes are perpendicular to world axes.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "we can compute if bounding boxes collide just by distance of objects on each axis");
+	snprintf(text, sizeof(text), "We detect collisions by distances of objects on axes.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "You can see, that bounding boxes does't rotate when you rotate objects");
+	snprintf(text, sizeof(text), "Bounding boxes don't rotate when objects rotate.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "You know the drill, move objects close enough, so that bounding boxes collide");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	snprintf(text, sizeof(text), "Move objects close enough, so that bounding boxes collide.");
+		if(level3flag){
+			snprintf(text, sizeof(text), "===================================");
+			print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+			line++;
+		snprintf(text, sizeof(text), "WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "   Press ");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(200, 0, 0);
+		snprintf(text, sizeof(text), "SPACE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		glColor3ub(255, 255, 255);
+		snprintf(text, sizeof(text), " to activate superpowers");
+		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+	}
 	}
 
 void level2(){
 	int line = 1;
 	char text[256];
-	if(!level2flag){
 		snprintf(text, sizeof(text), "LEVEL 2/3");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
@@ -666,29 +667,26 @@ void level2(){
 		snprintf(text, sizeof(text), "===================================");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
-		snprintf(text, sizeof(text), "*: There are two simple ways to detect, if objects collide");
-		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		snprintf(text, sizeof(text), "The easier one is, to have sphere around objects. ");
-		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		snprintf(text, sizeof(text), "We just detect, if spheres collide.");
-		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		snprintf(text, sizeof(text), "We can see that by comparing distance between objects and radius of spheres");
-		print(GLUT_BITMAP_HELVETICA_12,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-		snprintf(text, sizeof(text), "Lets try it, move cubes closer enough, so they collide");
-		print(GLUT_BITMAP_HELVETICA_12,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-	} else {
-		snprintf(text, sizeof(text), "You can see, that cubes can not touch without triggering the spheres contact");
-		print(GLUT_BITMAP_HELVETICA_18,text, 80.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-		line++;
-				snprintf(text, sizeof(text), "WELL DONE");
+		snprintf(text, sizeof(text), "There are two ways to detect objects collisions.");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
-		snprintf(text, sizeof(text), "*: Press ");
+		snprintf(text, sizeof(text), "The easier one is, to have sphere around objects. ");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "And we just detect, if spheres collide.");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "Lets try it, move cubes closer ;)");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+	if(level2flag){
+		snprintf(text, sizeof(text), "===================================");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "   Press ");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		glColor3ub(200, 0, 0);
 		snprintf(text, sizeof(text), "SPACE");
@@ -704,11 +702,36 @@ void level2(){
 void level1(){
 	int line = 1;
 	char text[256];
+
+
+	snprintf(text, sizeof(text), "LEVEL 1/3");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "We are just starting, so this will be easy.");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "Pick both controllers and show them on camera.");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+    if(level1flag){
+        snprintf(text, sizeof(text), "YES, small planets appear on top of the markers.");
+        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+        line++;
+        snprintf(text, sizeof(text), "Move markers closer together, so the planets crash.");
+        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+    }
+	line++;
 	if(level1flagend){
-		snprintf(text, sizeof(text), "WELL DONE");
+		snprintf(text, sizeof(text), "===================================");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
-		snprintf(text, sizeof(text), "*: Press ");
+		snprintf(text, sizeof(text), "         WELL DONE");
+		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+		line++;
+		snprintf(text, sizeof(text), "  Press ");
 		print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		glColor3ub(200, 0, 0);
 		snprintf(text, sizeof(text), "SPACE");
@@ -717,29 +740,7 @@ void level1(){
 		snprintf(text, sizeof(text), " to start second level");
 		print(GLUT_BITMAP_HELVETICA_18,text, 150.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 		line++;
-        return;
 	}
-
-	snprintf(text, sizeof(text), "LEVEL 1/3");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "===================================");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: We are just starting, so this will be easy");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-	snprintf(text, sizeof(text), "*: Pick both controllers and show them on camera");
-	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-	line++;
-    if(level1flag){
-        snprintf(text, sizeof(text), "*:YAY, small planets appear on top of the markers!!");
-        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-        line++;
-        snprintf(text, sizeof(text), "*: Move markers closer together, so the planets crash");
-        print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
-    }
-
 }
 
 void level0(){
@@ -754,16 +755,19 @@ void level0(){
 	snprintf(text, sizeof(text), "===================================");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "*: There are 3 levels in this game:");
+	snprintf(text, sizeof(text), "There are 3 levels in this game.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "*: Do what this text says to get to next level");
+	snprintf(text, sizeof(text), "This text will guide you to next level.");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "*: Pass all 3 levels to unlock superpowers!");
+	snprintf(text, sizeof(text), "Pass all 3 levels to unlock SUPERPOWERS!");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "*: Press ");
+	snprintf(text, sizeof(text), "===================================");
+	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
+	line++;
+	snprintf(text, sizeof(text), "  Press ");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	glColor3ub(200, 0, 0);
 	snprintf(text, sizeof(text), "SPACE");
@@ -779,23 +783,37 @@ static void printMode()
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	int menu_width = 400;
 	int menu_height = 650;
-    drawBackground( menu_width, menu_height,0, height-menu_height);
 	glColor3ub(255, 255, 255);
 
 	switch  (level) {
 		case 0:
+			menu_width = 400;
+			menu_height = 200;
+			drawBackground( menu_width, menu_height,0, height-menu_height);
 			level0();
 			break;
 		case 1:
+			menu_width = 430;
+			menu_height = 230;
+			drawBackground( menu_width, menu_height,0, height-menu_height);
 			level1();
 			break;
 		case 2:
+			menu_width = 430;
+			menu_height = 250;
+			drawBackground( menu_width, menu_height,0, height-menu_height);
 			level2();
 			break;
 		case 3:
+			menu_width = 440;
+			menu_height = 260;
+			drawBackground( menu_width, menu_height,0, height-menu_height);
 			level3();
 			break;
 		case 4:
+			menu_width = 400;
+			menu_height = 200;
+			drawBackground( menu_width, menu_height,0, height-menu_height);
 			level4();
 			break;
 	}
