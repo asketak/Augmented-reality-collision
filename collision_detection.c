@@ -88,7 +88,7 @@ static float gDrawRotateAngle = 10;			// For use in drawing.
 static float gboxsize = 2.0;			// for resizing collision box
 typedef enum {cBOX, cSPHERE} collision_type;
 typedef enum {BOX, SPHERE} object_type;
-static collision_type collision_box = cBOX;
+static collision_type collision_box = cSPHERE;
 static object_type object_model = BOX;
 double dist = 0;
 double xdist = 0;
@@ -100,6 +100,7 @@ bool level1flagend = false;
 bool level2flag = false;
 bool spaceflag = true;
 bool level3flag = false;
+Image* image = loadBMP("earth.bmp");
 
 ARdouble p[16];
 ARdouble m[16];
@@ -150,7 +151,10 @@ static void DrawCube(void)
 	const GLubyte black [4] = {255, 255, 255, 255};
     glPushMatrix(); // Save world coordinate system.
     glScalef(fSize, fSize, fSize);
-    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
+	if(level < 2){
+		glScalef(2,2,2);
+	}
+//    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
 //    glDisable(GL_LIGHTING);
 //    glDisable(GL_TEXTURE_2D);
 //    glDisable(GL_BLEND);
@@ -161,13 +165,11 @@ static void DrawCube(void)
 
     if (object_model == SPHERE){
 
-		GLuint _textureId; //The id of the textur
+		GLuint textureId= loadTexture(image);
 		GLUquadric *quad;
-		Image* image = loadBMP("earth.bmp");
 		glEnable(GL_TEXTURE_2D);
 
-		glBindTexture(GL_TEXTURE_2D, _textureId);
-		_textureId = loadTexture(image);
+		glBindTexture(GL_TEXTURE_2D, textureId);
 		quad = gluNewQuadric();
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -207,7 +209,7 @@ static void DrawCollision(void)
 	const GLubyte black [4] = {255, 255, 255, 255};
     glPushMatrix(); // Save world coordinate system.
     glScalef(fSize, fSize, fSize);
-    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
+//    glTranslatef(0.0f, 0.0f, 1.f); // Place base of cube on marker surface.
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
     glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -219,6 +221,14 @@ static void DrawCollision(void)
 		{
 			if(level == 1){
 				level1flagend = true;
+				spaceflag = true;
+			}
+			if(level == 2){
+				level2flag = true;
+				spaceflag = true;
+			}
+			if(level == 3){
+				level3flag = true;
 				spaceflag = true;
 			}
 			glColor4d(100,0,0,1);
@@ -300,11 +310,11 @@ static void Keyboard(unsigned char key, int x, int y)
 		arSetLabelingThreshMode(gARHandle, modea);
 		break;
 		case '-':
-			gboxsize += 0.1;
+			gboxsize -= 0.1;
 		break;
 		case '+':
 		case '=':
-			gboxsize -= 0.1;
+			gboxsize += 0.1;
 		break;
 		default:
 		break;
@@ -383,6 +393,30 @@ static void mainLoop(void)
 				kanji = 1;
 				// printf("kanj\n")
 			}
+		}
+
+		if(level == 0){
+			gboxsize = 2;
+			collision_box = cSPHERE;
+			object_model = SPHERE;
+		}
+
+		if(level == 1){
+			gboxsize = 2;
+            collision_box = cSPHERE;
+			object_model = SPHERE;
+		}
+
+		if(level == 2){
+			gboxsize = 2;
+            collision_box = cSPHERE;
+			object_model = BOX;
+		}
+
+		if(level == 3){
+			gboxsize = 2;
+            collision_box = cBOX;
+			object_model = SPHERE;
 		}
 
 		if (kanji == 1 && hiro == 1) {  // I show objects only when both are visible
@@ -473,11 +507,21 @@ static void Display(void)
 		glLoadMatrixd(m);
 #endif
 		DrawCube();
+
+		if(collision_box == cBOX){
 #ifdef ARDOUBLE_IS_FLOAT
-		glLoadMatrixf(m_norot);
+			glLoadMatrixf(m_norot);
 #else
-		glLoadMatrixd(m_norot);
+			glLoadMatrixd(m_norot);
 #endif
+		}else{
+#ifdef ARDOUBLE_IS_FLOAT
+			glLoadMatrixf(m);
+#else
+			glLoadMatrixd(m);
+#endif
+		}
+
 		DrawCollision();
 
         for (int i = 0; i < 3; ++i) {
@@ -495,7 +539,7 @@ static void Display(void)
 		gPatt_trans_norot[1][2] = 0;
 		gPatt_trans_norot[2][2] = 1;
 
-        arglCameraViewRH((const ARdouble (*)[4])gPatt_trans_norot, m_norot, 1);
+		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans_norot, m_norot, 1);
 		arglCameraViewRH((const ARdouble (*)[4])gPatt_trans2, m2, 1);
 #ifdef ARDOUBLE_IS_FLOAT
 		glLoadMatrixf(m2);
@@ -503,11 +547,20 @@ static void Display(void)
 		glLoadMatrixd(m2);
 #endif
 		DrawCube();
+
+		if(collision_box == cBOX){
 #ifdef ARDOUBLE_IS_FLOAT
-		glLoadMatrixf(m_norot);
+			glLoadMatrixf(m_norot);
 #else
-		glLoadMatrixd(m_norot);
+			glLoadMatrixd(m_norot);
 #endif
+		}else{
+#ifdef ARDOUBLE_IS_FLOAT
+			glLoadMatrixf(m2);
+#else
+			glLoadMatrixd(m2);
+#endif
+		}
 		DrawCollision();
 	} // gPatt_found
 
@@ -729,7 +782,6 @@ static void printMode()
     drawBackground( menu_width, menu_height,0, height-menu_height);
 	glColor3ub(255, 255, 255);
 
-    std::cout << level << std::endl;
 	switch  (level) {
 		case 0:
 			level0();
