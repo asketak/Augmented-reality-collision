@@ -269,7 +269,9 @@ static void Keyboard(unsigned char key, int x, int y)
 {
 	int mode, threshChange = 0;
 	AR_LABELING_THRESH_MODE modea;
+    int k = key;
 
+	std::cout << ":" << k << std::endl;
 	switch (key) {
 		case 0x1B:						// Quit.
 		case 'Q':
@@ -278,10 +280,15 @@ static void Keyboard(unsigned char key, int x, int y)
 		exit(0);
 		break;
 		case ' ':
-			std::cout << "in space" << std::endl;
-			if(spaceflag){
+			if(spaceflag && level < 4){
 					level += 1;
 					spaceflag = false;
+			}
+            if(level == 4){
+				switch (object_model) {
+					case BOX:        object_model = SPHERE; break;
+					case SPHERE:   object_model = BOX; break;
+				}
 			}
 		break;
 		case 'd':
@@ -295,6 +302,12 @@ static void Keyboard(unsigned char key, int x, int y)
 			case AR_LABELING_THRESH_MODE_AUTO_BRACKETING:
 			default: modea = AR_LABELING_THRESH_MODE_MANUAL; break;
 		}
+		case 13:
+			switch (collision_box) {
+				case cBOX:        collision_box = cSPHERE; break;
+				case cSPHERE:   collision_box = cBOX; break;
+			}
+            break;
 		case 's':
 		case 'S':
 		switch (collision_box) {
@@ -599,10 +612,10 @@ void level4(){
 	snprintf(text, sizeof(text), "===================================");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "A: Switch objects (cube/earth)");
+	snprintf(text, sizeof(text), "Space: Switch objects (cube/earth)");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
-	snprintf(text, sizeof(text), "S: Switches collision detection(box/sphere)");
+	snprintf(text, sizeof(text), "Enter: Switches collision detection(box/sphere)");
 	print(GLUT_BITMAP_HELVETICA_18,text, 2.0f,  (line - 1)*24.0f + 10.0f, 0, 1);
 	line++;
 	snprintf(text, sizeof(text), "+/-: Change the size of bounding box/sphere");
